@@ -16,10 +16,11 @@
         state: latest
       tags: update_system
 
-    - name: Verificar nombre de host
+    - name: Verificar el nombre de host actual
       ansible.builtin.command:
         cmd: "cat /etc/hostname"
       register: hostname_result
+      changed_when: false
       tags: check_hostname
 
     - name: Configurar el nombre de host si es necesario
@@ -31,11 +32,12 @@
     - name: Verificar el archivo /etc/hosts
       ansible.builtin.command:
         cmd: "cat /etc/hosts"
+      changed_when: false
       tags: check_hosts
 
     - name: Instalar FreeIPA y servidor DNS
       ansible.builtin.yum:
-        name: 
+        name:
           - ipa-server
           - ipa-server-dns
         state: present
@@ -46,7 +48,7 @@
         cmd: ipa-server-install --unattended --hostname="{{ hostname }}" --ip-address="{{ ip_address }}" --domain="{{ domain_name }}" --realm="{{ realm_name }}" --setup-dns --forwarder="{{ forwarder_dns }}"
       tags: install_script
 
-    - name: Habilitar el servicio named para iniciar automáticamente
+    - name: Habilitar y arrancar el servicio named
       ansible.builtin.systemd:
         name: named
         enabled: true
