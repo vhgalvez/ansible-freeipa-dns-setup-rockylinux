@@ -1,0 +1,104 @@
+---
+- name: Instalación y configuración de FreeIPA como servidor DNS en Rocky Linux
+  hosts: all
+  become: true
+  vars:
+    hostname: "freeipa1.cefaslocalserver.com"
+    ip_address: "10.17.3.11"
+    domain_name: "cefaslocalserver.com"
+    realm_name: "CEFASLOCALSERVER.COM"
+    forwarder_dns: "8.8.8.8"
+
+  tasks:
+    - name: Actualizar el sistema
+      ansible.builtin.yum:
+        name: "*"
+        state: latest
+      tags: update_system
+
+    - name: Verificar nombre de host
+      ansible.builtin.command:
+        cmd: "cat /etc/hostname"
+      register: hostname_result
+      tags: check_hostname
+
+    - name: Configurar el nombre de host si es necesario
+      ansible.builtin.hostname:
+        name: "{{ hostname }}"
+      when: hostname_result.stdout != hostname
+      tags: set_hostname
+
+    - name: Verificar el archivo /etc/hosts
+      ansible.builtin.command:
+        cmd: "cat /etc/hosts"
+      tags: check_hosts
+
+    - name: Instalar FreeIPA y servidor DNS
+      ansible.builtin.yum:
+        name: 
+          - ipa-server
+          - ipa-server-dns
+        state: present
+      tags: install_freeipa
+
+    - name: Ejecutar el script de instalación de FreeIPA
+      ansible.builtin.command:
+        cmd: ipa-server-install --unattended --hostname="{{ hostname }}" --ip-address="{{ ip_address }}" --domain="{{ domain_name }}" --realm="{{ realm_name }}" --setup-dns --forwarder="{{ forwarder_dns }}"
+      tags: install_script
+
+    - name: Habilitar el servicio named para iniciar automáticamente
+      ansible.builtin.systemd:
+        name: named
+        enabled: true
+        state: started
+      tags: enable_named
+
+    - name: Configurar reenvío de DNS en FreeIPA
+      ansible.builtin.command:
+        cmd: ipa dnsconfig-mod --forwarder={{ forwarder_dns }}
+      tags: configure_dns
+
+    - name: Deshabilitar DNSSEC y permitir recursión
+      ansible.builtin.blockinfile:
+        path: /etc/named/ipa-options-ext.conf
+        block: |
+          dnssec-validation no;
+          allow-recursion { any; };
+      tags: dns_config
+
+    - name: Reiniciar servicio DNS
+      ansible.builtin.systemd:
+        name: named
+        state: restarted
+      tags: restart_dns
+
+    - name: Configurar firewall para permitir tráfico DNS
+      ansible.builtin.firewalld:
+        port: "{{ item }}"
+        permanent: true
+        state: enabled
+      loop:
+        - 53/udp
+        - 53/tcp
+      notify:
+        - Reload firewalld
+      tags: firewall
+
+    - name: Obtener ticket de Kerberos
+      ansible.builtin.command:
+        cmd: kinit admin
+      tags: kerberos_ticket
+
+    - name: Añadir registros DNS
+      ansible.builtin.command:
+        cmd: ipa dnsrecord-add {{ domain_name }} {{ item.name }} --a-rec {{ item.ip }}
+      loop:
+        - { name: "freeipa1", ip: "10.17.3.11" }
+        - { name: "bootstrap1", ip: "10.17.3.14" }
+      tags: add_dns_records
+
+  handlers:
+    - name: Reload firewalld
+      ansible.builtin.systemd:
+        name: firewalld
+        state: reloaded
