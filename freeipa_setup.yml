@@ -8,6 +8,8 @@
     domain_name: "cefaslocalserver.com"
     realm_name: "CEFASLOCALSERVER.COM"
     forwarder_dns: "8.8.8.8"
+    dir_manager_password: "DirectoryManagerPassword"  # Cambia esta contraseña a una segura
+    admin_password: "AdminPassword"                  # Cambia esta contraseña a una segura
 
   tasks:
     - name: Actualizar el sistema
@@ -37,7 +39,7 @@
 
     - name: Instalar FreeIPA y servidor DNS
       ansible.builtin.yum:
-        name:
+        name: 
           - ipa-server
           - ipa-server-dns
         state: present
@@ -45,7 +47,7 @@
 
     - name: Ejecutar el script de instalación de FreeIPA
       ansible.builtin.command:
-        cmd: ipa-server-install --unattended --hostname="{{ hostname }}" --ip-address="{{ ip_address }}" --domain="{{ domain_name }}" --realm="{{ realm_name }}" --setup-dns --forwarder="{{ forwarder_dns }}"
+        cmd: ipa-server-install --unattended --hostname="{{ hostname }}" --ip-address="{{ ip_address }}" --domain="{{ domain_name }}" --realm="{{ realm_name }}" --setup-dns --forwarder="{{ forwarder_dns }}" -p "{{ dir_manager_password }}" -a "{{ admin_password }}"
       tags: install_script
 
     - name: Habilitar y arrancar el servicio named
