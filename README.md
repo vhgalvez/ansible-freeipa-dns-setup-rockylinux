@@ -2,7 +2,7 @@
 
 ## Instalación de Ansible en Rocky Linux 9.4
 
-Para instalar Ansible en tu sistema Rocky Linux 9.4, puedes seguir estos pasos:
+Para instalar Ansible en tu sistema Rocky Linux 9.4, sigue estos pasos:
 
 1. **Agregar el repositorio de EPEL** (Extra Packages for Enterprise Linux), ya que Ansible suele estar disponible en este repositorio:
 
@@ -22,21 +22,27 @@ Para instalar Ansible en tu sistema Rocky Linux 9.4, puedes seguir estos pasos:
     ansible --version
     ```
 
+4. **Clonar el repositorio**:
+
+    ```bash
+    sudo git clone https://github.com/vhgalvez/ansible-freeipa-dns-setup-rockylinux.git
+    ```
+
 Esto instalará Ansible y lo preparará para ejecutar playbooks en tu sistema.
 
 ## Ejecutar un Playbook de Ansible en un Servidor Remoto usando SSH
 
-Aquí tienes una guía paso a paso para ejecutar el playbook de Ansible en tu servidor remoto usando SSH:
+A continuación, se muestra una guía paso a paso para ejecutar un playbook de Ansible en tu servidor remoto usando SSH:
 
-### Paso 1: Verificar Conectividad con SSH
+### Paso 1: Verificar la Conectividad con SSH
 
-Primero, asegúrate de que puedes conectarte al servidor remoto con el comando SSH:
+Primero, asegúrate de que puedes conectarte al servidor remoto con el siguiente comando SSH:
 
 ```bash
 sudo ssh -i /root/.ssh/cluster_openshift/key_cluster_openshift/id_rsa_key_cluster_openshift core@10.17.3.11 -p 22
 ```
 
-Si esta conexión funciona, tu clave SSH está configurada correctamente, y podrás conectarte desde Ansible.
+Si esta conexión funciona, tu clave SSH está configurada correctamente y podrás conectarte desde Ansible.
 
 ### Paso 2: Configurar el Inventario de Ansible
 
@@ -72,4 +78,4 @@ Ansible mostrará el progreso de cada tarea en el playbook. Si alguna tarea fall
 3. Guardar el playbook como `freeipa_setup.yml`.
 4. Ejecutar el playbook con `ansible-playbook`.
 
-Con esto, Ansible debería aplicar todas las configuraciones especificadas en el playbook en tu servidor remoto.
+Con estos pasos, Ansible debería aplicar todas las configuraciones especificadas en el playbook en tu servidor remoto.
