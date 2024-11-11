@@ -64,7 +64,7 @@ Guarda el playbook YAML que compartiste en un archivo, por ejemplo, `freeipa_set
 Ejecuta el playbook con el siguiente comando, especificando el archivo de inventario:
 
 ```bash
-sudo ansible-playbook -i inventory.ini freeipa_setup.yml
+sudo ansible-playbook -i hosts_file freeipa_setup.yml
 ```
 
 ### Paso 5: Monitorear la Ejecución
@@ -93,44 +93,6 @@ Una vez que Ansible haya terminado de ejecutar el playbook, verifica que la conf
 | loadbalancer1 | 2   | 2048         | 10.17.3.12 | loadbalancer1.cefaslocalserver.com | 32                   | loadbalancer1 |
 | postgresql1   | 2   | 2048         | 10.17.3.13 | postgresql1.cefaslocalserver.com   | 32                   | postgresql1   |
 | helper        | 2   | 2048         | 10.17.3.14 | helper.cefaslocalserver.com        | 32                   | helper_node   |
-
-
-```bash
-kinit admin
-```
-
-```bash
-
-ipa dnsrecord-find cefaslocalserver.com
-```
-
-Verificar la resolución DNS desde una VM
-
-```bash
-dig physical1.cefaslocalserver.com
-dig freeipa1.cefaslocalserver.com
-dig bootstrap1.cefaslocalserver.com
-dig master1.cefaslocalserver.com
-dig google.com
-```
-```bash
-ping -c 4 physical1.cefaslocalserver.com
-ping -c 4 bootstrap1.cefaslocalserver.com
-ping -c 4 master1.cefaslocalserver.com
-ping -c 4 google.com
-```
-
-
-sudo systemctl ena named
-
-
-Verificar el estado del servicio DNS
-
-```bash
-sudo systemctl status named
-```
-Verificar la configuración del firewall en el servidor FreeIPA
-Asegúrate de que el firewall permite el tráfico DNS en los puertos 53 TCP/UDP.
 
 
 
