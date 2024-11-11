@@ -8,8 +8,8 @@
     domain_name: "cefaslocalserver.com"
     realm_name: "CEFASLOCALSERVER.COM"
     forwarder_dns: "8.8.8.8"
-    dir_manager_password: "DirectoryManagerPassword"  # Cambia esta contraseña a una segura
-    admin_password: "AdminPassword"                  # Cambia esta contraseña a una segura
+    dir_manager_password: "DirectoryManagerPassword" # Cambia esta contraseña a una segura
+    admin_password: "AdminPassword" # Cambia esta contraseña a una segura
 
   tasks:
     - name: Actualizar el sistema
@@ -39,7 +39,7 @@
 
     - name: Instalar FreeIPA y servidor DNS
       ansible.builtin.yum:
-        name: 
+        name:
           - ipa-server
           - ipa-server-dns
         state: present
@@ -63,12 +63,20 @@
         ipa dnsconfig-mod --forwarder={{ forwarder_dns }}
       tags: configure_dns
 
-    - name: Deshabilitar DNSSEC y permitir recursión
-      ansible.builtin.blockinfile:
+    - name: Deshabilitar DNSSEC en named config si no está presente
+      ansible.builtin.lineinfile:
         path: /etc/named/ipa-options-ext.conf
-        block: |
-          dnssec-validation no;
-          allow-recursion { any; };
+        line: "dnssec-validation no;"
+        state: present
+        insertafter: "listen-on-v6 { any; };"
+      tags: dns_config
+
+    - name: Permitir recursión para todas las redes en named config
+      ansible.builtin.lineinfile:
+        path: /etc/named/ipa-options-ext.conf
+        line: "allow-recursion { any; };"
+        state: present
+        insertafter: "dnssec-validation no;"
       tags: dns_config
 
     - name: Reiniciar servicio DNS
