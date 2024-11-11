@@ -8,8 +8,8 @@
     domain_name: "cefaslocalserver.com"
     realm_name: "CEFASLOCALSERVER.COM"
     forwarder_dns: "8.8.8.8"
-    dir_manager_password: "12345678"  # Cambia esta contraseña a una segura
-    admin_password: "12345678"                  # Cambia esta contraseña a una segura
+    dir_manager_password: "12345678" # Cambia esta contraseña a una segura
+    admin_password: "12345678" # Cambia esta contraseña a una segura
 
   tasks:
     - name: Actualizar el sistema
@@ -39,7 +39,7 @@
 
     - name: Instalar FreeIPA y servidor DNS
       ansible.builtin.yum:
-        name: 
+        name:
           - ipa-server
           - ipa-server-dns
         state: present
