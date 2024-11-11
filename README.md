@@ -77,6 +77,51 @@ Ansible mostrará el progreso de cada tarea en el playbook. Si alguna tarea fall
 Una vez que Ansible haya terminado de ejecutar el playbook, verifica que la configuración se haya aplicado correctamente en el servidor remoto.
 
 
+```bash
+sudo klist
+```
+
+
+```bash
+sudo kinit admin
+```
+
+```bash
+sudo ipa dnsrecord-find cefaslocalserver.com
+```
+
+Verificar la resolución DNS desde una VM
+
+```bash
+dig physical1.cefaslocalserver.com
+dig freeipa1.cefaslocalserver.com
+dig bootstrap1.cefaslocalserver.com
+dig master1.cefaslocalserver.com
+dig google.com
+```
+```bash
+ping -c 4 physical1.cefaslocalserver.com
+ping -c 4 bootstrap1.cefaslocalserver.com
+ping -c 4 master1.cefaslocalserver.com
+ping -c 4 google.com
+```
+
+
+sudo systemctl enable named
+
+
+Verificar el estado del servicio DNS
+
+```bash
+sudo systemctl enable named
+sudo systemctl start named
+sudo systemctl status named
+```
+
+Verificar la configuración del firewall en el servidor FreeIPA
+Asegúrate de que el firewall permite el tráfico DNS en los puertos 53 TCP/UDP.
+
+## Resumen de Recursos para Máquinas Virtuales
 
 - Resumen de Recursos para Máquinas Virtuales
 
@@ -93,6 +138,7 @@ Una vez que Ansible haya terminado de ejecutar el playbook, verifica que la conf
 | loadbalancer1 | 2   | 2048         | 10.17.3.12 | loadbalancer1.cefaslocalserver.com | 32                   | loadbalancer1 |
 | postgresql1   | 2   | 2048         | 10.17.3.13 | postgresql1.cefaslocalserver.com   | 32                   | postgresql1   |
 | helper        | 2   | 2048         | 10.17.3.14 | helper.cefaslocalserver.com        | 32                   | helper_node   |
+
 
 
 
