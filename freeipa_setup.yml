@@ -8,8 +8,8 @@
     domain_name: "cefaslocalserver.com"
     realm_name: "CEFASLOCALSERVER.COM"
     forwarder_dns: "8.8.8.8"
-    dir_manager_password: "12345678"  # Cambia esta contraseña a una segura
-    admin_password: "12345678"                  # Cambia esta contraseña a una segura
+    dir_manager_password: "DirectoryManagerPassword"  # Cambia esta contraseña a una segura
+    admin_password: "AdminPassword"                  # Cambia esta contraseña a una segura
 
   tasks:
     - name: Actualizar el sistema
@@ -57,18 +57,10 @@
         state: started
       tags: enable_named
 
-    - name: Obtener ticket de Kerberos para el usuario admin
-      ansible.builtin.command:
-        cmd: echo "{{ admin_password }}" | kinit admin
-      register: kinit_result
-      ignore_errors: yes
-      changed_when: false
-      tags: kerberos_ticket
-
-    - name: Configurar reenvío de DNS en FreeIPA
-      ansible.builtin.command:
-        cmd: ipa dnsconfig-mod --forwarder={{ forwarder_dns }}
-      when: kinit_result is succeeded
+    - name: Configurar reenvío de DNS en FreeIPA con autenticación Kerberos
+      ansible.builtin.shell: |
+        echo "{{ admin_password }}" | kinit admin
+        ipa dnsconfig-mod --forwarder={{ forwarder_dns }}
       tags: configure_dns
 
     - name: Deshabilitar DNSSEC y permitir recursión
