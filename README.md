@@ -64,7 +64,7 @@ Guarda el playbook YAML que compartiste en un archivo, por ejemplo, `freeipa_set
 Ejecuta el playbook con el siguiente comando, especificando el archivo de inventario:
 
 ```bash
-sudo ansible-playbook -i inventory.ini freeipa_setup.yml
+sudo ansible-playbook -i hosts_file freeipa_setup.yml
 ```
 
 ### Paso 5: Monitorear la Ejecución

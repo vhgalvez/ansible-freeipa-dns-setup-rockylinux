@@ -57,9 +57,18 @@
         state: started
       tags: enable_named
 
+    - name: Obtener ticket de Kerberos para el usuario admin
+      ansible.builtin.command:
+        cmd: echo "{{ admin_password }}" | kinit admin
+      register: kinit_result
+      ignore_errors: yes
+      changed_when: false
+      tags: kerberos_ticket
+
     - name: Configurar reenvío de DNS en FreeIPA
       ansible.builtin.command:
         cmd: ipa dnsconfig-mod --forwarder={{ forwarder_dns }}
+      when: kinit_result is succeeded
       tags: configure_dns
 
     - name: Deshabilitar DNSSEC y permitir recursión
@@ -88,17 +97,23 @@
         - Reload firewalld
       tags: firewall
 
-    - name: Obtener ticket de Kerberos
-      ansible.builtin.command:
-        cmd: kinit admin
-      tags: kerberos_ticket
-
     - name: Añadir registros DNS
       ansible.builtin.command:
         cmd: ipa dnsrecord-add {{ domain_name }} {{ item.name }} --a-rec {{ item.ip }}
       loop:
         - { name: "freeipa1", ip: "10.17.3.11" }
         - { name: "bootstrap1", ip: "10.17.3.14" }
+        - { name: "master1", ip: "10.17.4.21" }
+        - { name: "master2", ip: "10.17.4.22" }
+        - { name: "master3", ip: "10.17.4.23" }
+        - { name: "worker1", ip: "10.17.4.24" }
+        - { name: "worker2", ip: "10.17.4.25" }
+        - { name: "worker3", ip: "10.17.4.26" }
+        - { name: "bootstrap", ip: "10.17.4.27" }
+        - { name: "bastion1", ip: "192.168.0.20" }
+        - { name: "load_balancer1", ip: "10.17.3.12" }
+        - { name: "postgresql1", ip: "10.17.3.13" }
+        - { name: "helper", ip: "10.17.3.14" }
       tags: add_dns_records
 
   handlers:
