@@ -71,6 +71,7 @@ sudo ansible-playbook -i hosts_file freeipa_setup.yml
 
 Ansible mostrará el progreso de cada tarea en el playbook. Si alguna tarea falla, revisa los mensajes de error para diagnosticar el problema.
 
+![alt text](dns.png)
 
 ### Paso 6: Verificar la Configuración
 
@@ -142,7 +143,6 @@ Asegúrate de que el firewall permite el tráfico DNS en los puertos 53 TCP/UDP.
 
 
 
-![alt text](dns.png)
 
 
 ## Resumen
