@@ -142,6 +142,9 @@ Asegúrate de que el firewall permite el tráfico DNS en los puertos 53 TCP/UDP.
 
 
 
+![alt text](dns.png)
+
+
 ## Resumen
 
 1. Conectar por SSH para verificar el acceso.
