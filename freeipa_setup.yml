@@ -1,6 +1,6 @@
 ---
 - name: Instalación y configuración de FreeIPA como servidor DNS en Rocky Linux
-  hosts: freeipa
+  hosts: freeipa_servers
   become: true
   vars:
     hostname: "freeipa1.cefaslocalserver.com"
@@ -8,8 +8,8 @@
     domain_name: "cefaslocalserver.com"
     realm_name: "CEFASLOCALSERVER.COM"
     forwarder_dns: "8.8.8.8"
-    dir_manager_password: "12345678" # Cambia esta contraseña a una segura
-    admin_password: "12345678" # Cambia esta contraseña a una segura
+    dir_manager_password: "12345678"  # Cambia esta contraseña a una segura
+    admin_password: "12345678"       # Cambia esta contraseña a una segura
     dns_records:
       - { name: "freeipa1", ip: "10.17.3.11" }
       - { name: "bootstrap1", ip: "10.17.3.14" }
