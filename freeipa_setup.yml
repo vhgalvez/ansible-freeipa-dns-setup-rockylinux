@@ -11,8 +11,6 @@
     dir_manager_password: "12345678"  # Cambia esta contraseña a una segura
     admin_password: "12345678"       # Cambia esta contraseña a una segura
     dns_records:
-      - { name: "freeipa1", ip: "10.17.3.11" }
-      - { name: "bootstrap", ip: "10.17.3.14" }
       - { name: "master1", ip: "10.17.4.21" }
       - { name: "master2", ip: "10.17.4.22" }
       - { name: "master3", ip: "10.17.4.23" }
@@ -20,10 +18,11 @@
       - { name: "worker2", ip: "10.17.4.25" }
       - { name: "worker3", ip: "10.17.4.26" }
       - { name: "bootstrap", ip: "10.17.4.27" }
-      - { name: "bastion1", ip: "192.168.0.20" }
-      - { name: "load_balancer1", ip: "10.17.3.12" }
+      - { name: "freeipa1", ip: "10.17.3.11" }
+      - { name: "loadbalancer1", ip: "10.17.3.12" }
       - { name: "postgresql1", ip: "10.17.3.13" }
       - { name: "storage1-rook-ceph", ip: "10.17.3.14" }
+      - { name: "bastion1", ip: "192.168.0.20" }
 
   tasks:
     - name: Actualizar el sistema
@@ -116,8 +115,8 @@
       loop: "{{ dns_records }}"
       ansible.builtin.shell: |
         ipa dnsrecord-find {{ domain_name }} {{ item.name }} --a-rec={{ item.ip }} || \
-        ipa dnsrecord-add {{ domain_name }} {{ item.name }} --a-rec {{ item.ip }}
-      ignore_errors: yes
+        ipa dnsrecord-add {{ domain_name }} {{ item.name }} --a-rec={{ item.ip }}
+      ignore_errors: no
       tags: add_dns_records
 
   handlers:
