@@ -8,8 +8,8 @@
     domain_name: "cefaslocalserver.com"
     realm_name: "CEFASLOCALSERVER.COM"
     forwarder_dns: "8.8.8.8"
-    dir_manager_password: "12345678"  # Cambia esta contraseña a una segura
-    admin_password: "12345678"       # Cambia esta contraseña a una segura
+    dir_manager_password: "12345678"
+    admin_password: "12345678"
     dns_records:
       - { name: "master1", ip: "10.17.4.21" }
       - { name: "master2", ip: "10.17.4.22" }
