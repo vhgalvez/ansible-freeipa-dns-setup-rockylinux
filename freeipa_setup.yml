@@ -119,6 +119,11 @@
       ignore_errors: no
       tags: add_dns_records
 
+    - name: Configurar alias DNS para balanceadores (round-robin DNS)
+      ansible.builtin.shell: |
+        ipa dnsrecord-add {{ domain_name }} loadbalancer --a-rec 10.17.3.12 --a-rec 10.17.3.13
+      tags: configure_dns_alias
+
   handlers:
     - name: Reload firewalld
       ansible.builtin.systemd:
