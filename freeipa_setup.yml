@@ -21,7 +21,7 @@
       - { name: "loadbalancer1", ip: "10.17.3.12" }
       - { name: "loadbalancer2", ip: "10.17.3.13" }
       - { name: "postgresql1", ip: "10.17.3.14" }
-      - { name: "rc-storage1", ip: "10.17.3.15" }
+      - { name: "storage1", ip: "10.17.3.15" }
       - { name: "bastion1", ip: "192.168.0.20" }
 
   tasks:
