@@ -1,4 +1,4 @@
-- name: Instalación y configuración de FreeIPA como servidor DNS en Rocky Linux
+- name: Instalación y configuración de FreeIPA como servidor DNS en Alma Linux
   hosts: freeipa_servers
   become: true
   vars:
