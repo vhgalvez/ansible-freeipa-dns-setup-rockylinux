@@ -1,4 +1,4 @@
-- name: Instalación y configuración de FreeIPA como servidor DNS en Alma Linux
+- name: Instalación y configuración de FreeIPA como servidor DNS en AlmaLinux
   hosts: freeipa_servers
   become: true
   vars:
@@ -25,34 +25,34 @@
 
   tasks:
     - name: Verificar si FreeIPA ya está instalado
-      ansible.builtin.shell: rpm -q ipa-server
+      ansible.builtin.stat:
+        path: /etc/ipa/default.conf
       register: freeipa_installed
-      failed_when: false
-      changed_when: false
       tags: check_freeipa
 
     - name: Desinstalar FreeIPA si ya está instalado
       ansible.builtin.shell: |
         ipactl stop && ipa-server-install --uninstall -U
-      when: freeipa_installed.rc == 0
+      when: freeipa_installed.stat.exists
       tags: uninstall_freeipa
 
     - name: Eliminar archivos residuales de FreeIPA
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent
-      with_items:
+      loop:
         - /etc/ipa
         - /var/lib/ipa
         - /var/log/ipa
         - /var/named/dns
-      when: freeipa_installed.rc == 0
+      when: freeipa_installed.stat.exists
       tags: cleanup_files
 
-    - name: Actualizar el sistema
+    - name: Actualizar el sistema si FreeIPA no está instalado
       ansible.builtin.yum:
         name: "*"
         state: latest
+      when: not freeipa_installed.stat.exists
       tags: update_system
 
     - name: Configurar el nombre de host
@@ -68,7 +68,7 @@
         state: present
       tags: install_freeipa
 
-    - name: Ejecutar el script de instalación de FreeIPA
+    - name: Ejecutar la instalación de FreeIPA
       ansible.builtin.shell: |
         ipa-server-install --unattended \
         --hostname="{{ hostname }}" \
@@ -94,7 +94,7 @@
         ipa dnsconfig-mod --forwarder={{ forwarder_dns }}
       tags: configure_dns
 
-    - name: Deshabilitar DNSSEC en named config
+    - name: Deshabilitar DNSSEC en la configuración de named
       ansible.builtin.lineinfile:
         path: /etc/named/ipa-options-ext.conf
         line: "dnssec-validation no;"
@@ -102,7 +102,7 @@
         insertafter: "listen-on-v6 { any; };"
       tags: dns_config
 
-    - name: Permitir recursión para todas las redes en named config
+    - name: Permitir recursión para todas las redes en la configuración de named
       ansible.builtin.lineinfile:
         path: /etc/named/ipa-options-ext.conf
         line: "allow-recursion { any; };"
@@ -124,8 +124,7 @@
       loop:
         - 53/udp
         - 53/tcp
-      notify:
-        - Reload firewalld
+      notify: Reload firewalld
       tags: firewall
 
     - name: Autenticarse con Kerberos para agregar registros DNS
@@ -140,7 +139,7 @@
       ansible.builtin.shell: |
         ipa dnsrecord-find {{ domain_name }} {{ item.name }} --a-rec={{ item.ip }} || \
         ipa dnsrecord-add {{ domain_name }} {{ item.name }} --a-rec={{ item.ip }}
-      ignore_errors: no
+      ignore_errors: false
       tags: add_dns_records
 
     - name: Configurar alias DNS para balanceadores (round-robin DNS)
