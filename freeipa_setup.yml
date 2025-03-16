@@ -55,10 +55,13 @@
       when: not freeipa_installed.stat.exists
       tags: update_system
 
-    - name: Habilitar el repositorio FreeIPA en AlmaLinux (si no está activado)
-      ansible.builtin.command: dnf module enable -y idm:DL1
-      register: enable_idm
-      changed_when: "'Enabling module streams' in enable_idm.stdout"
+    - name: Habilitar repositorios adicionales si es necesario
+      ansible.builtin.shell: |
+        dnf install -y epel-release dnf-plugins-core
+        dnf config-manager --set-enabled crb || true
+        dnf config-manager --set-enabled appstream || true
+      args:
+        executable: /bin/bash
       tags: enable_repo
 
     - name: Instalar FreeIPA y servidor DNS (Forzar instalación si no está presente)
