@@ -7,8 +7,8 @@
     domain_name: "cefaslocalserver.com"
     realm_name: "CEFASLOCALSERVER.COM"
     forwarder_dns: "8.8.8.8"
-    dir_manager_password: "Admin123!"  # Requerido aunque no se use LDAP
-    admin_password: "Admin123!"  # Contraseña del admin de IPA
+    dir_manager_password: "Admin123!"  # Se requiere aunque LDAP no se use
+    admin_password: "Admin123!"  # Para administrar el servicio
 
   tasks:
     - name: Verificar si FreeIPA DNS ya está instalado
@@ -17,12 +17,18 @@
       register: freeipa_installed
       tags: check_freeipa
 
-    - name: Detener y desinstalar FreeIPA si ya está instalado
+    - name: Detener FreeIPA si ya está instalado
       ansible.builtin.shell: |
         ipactl stop
-        ipa-server-install --uninstall -U
-      when: freeipa_installed.stat.exists
       ignore_errors: true
+      when: freeipa_installed.stat.exists
+      tags: stop_freeipa
+
+    - name: Desinstalar completamente FreeIPA si está instalado
+      ansible.builtin.shell: |
+        ipa-server-install --uninstall -U
+      ignore_errors: true
+      when: freeipa_installed.stat.exists
       tags: uninstall_freeipa
 
     - name: Eliminar archivos residuales de FreeIPA
@@ -34,6 +40,7 @@
         - /var/lib/ipa
         - /var/log/ipa
         - /var/named/dns
+        - /var/lib/dirsrv
       when: freeipa_installed.stat.exists
       tags: cleanup_files
 
