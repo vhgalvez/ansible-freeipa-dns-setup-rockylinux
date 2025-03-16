@@ -70,7 +70,7 @@
         name: "{{ hostname }}"
       tags: set_hostname
 
-    - name: Ejecutar la instalación de FreeIPA solo como servidor DNS (sin LDAP)
+    - name: Ejecutar la instalación de FreeIPA con DNS
       ansible.builtin.shell: |
         ipa-server-install --unattended \
         --hostname="{{ hostname }}" \
@@ -79,7 +79,6 @@
         --realm="{{ realm_name }}" \
         --setup-dns \
         --forwarder="{{ forwarder_dns }}" \
-        --no-ldap \
         -p "{{ dir_manager_password }}" \
         -a "{{ admin_password }}"
       tags: install_freeipa
