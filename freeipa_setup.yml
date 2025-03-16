@@ -1,5 +1,4 @@
----
-- name: Instalación y configuración de FreeIPA como servidor DNS en AlmaLinux
+- name: Instalación y configuración de FreeIPA solo como servidor DNS en AlmaLinux
   hosts: freeipa_servers
   become: true
   vars:
@@ -32,11 +31,10 @@
       tags: check_freeipa
 
     - name: Desinstalar FreeIPA si ya está instalado
-      ansible.builtin.command:
-        cmd: ipactl stop && ipa-server-install --uninstall -U
+      ansible.builtin.shell: ipa-server-install --uninstall -U
       when: freeipa_installed.stat.exists
-      tags: uninstall_freeipa
       ignore_errors: true
+      tags: uninstall_freeipa
 
     - name: Eliminar archivos residuales de FreeIPA
       ansible.builtin.file:
@@ -50,89 +48,41 @@
       when: freeipa_installed.stat.exists
       tags: cleanup_files
 
-    - name: Crear directorios faltantes para instalación de FreeIPA
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: directory
-        mode: '0755'
-      loop:
-        - /var/lib/ipa/sysrestore
-        - /var/lib/ipa/sysupgrade
-        - /var/log/ipa
-      tags: create_dirs
-
-    - name: Crear archivos de estado faltantes
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: touch
-        mode: '0644'
-      loop:
-        - /var/lib/ipa/sysupgrade/sysupgrade.state
-        - /var/lib/ipa/sysrestore/sysrestore.state
-      tags: create_files
-
-    - name: Actualizar el sistema si FreeIPA no está instalado
-      ansible.builtin.yum:
-        name: "*"
-        state: latest
-      when: not freeipa_installed.stat.exists
-      tags: update_system
+    - name: Asegurar que no haya procesos ocupando el puerto 389 (LDAP)
+      ansible.builtin.shell: "fuser -k 389/tcp || true"
+      tags: free_port
 
     - name: Instalar FreeIPA y dependencias necesarias
       ansible.builtin.yum:
         name:
           - ipa-server
           - ipa-server-dns
-          - epel-release
-          - dnf-plugins-core
           - bind
           - bind-utils
           - chrony
-          - krb5-server
-          - krb5-libs
-          - krb5-workstation
-          - oddjob
-          - oddjob-mkhomedir
-          - sssd
-          - sssd-tools
-          - policycoreutils-python-utils
-          - mod_ssl
-          - httpd
-          - python3-libselinux
+          - firewalld
         state: present
         update_cache: true
-      tags: install_freeipa
-
-    - name: Verificar si ipa-server-install está instalado
-      ansible.builtin.stat:
-        path: /usr/sbin/ipa-server-install
-      register: ipa_server_check
-      failed_when: not ipa_server_check.stat.exists
-      tags: verify_install
+      tags: install_packages
 
     - name: Configurar el nombre de host
       ansible.builtin.hostname:
         name: "{{ hostname }}"
       tags: set_hostname
 
-    - name: Ejecutar la instalación de FreeIPA
-      ansible.builtin.command:
-        cmd: >
-          ipa-server-install --unattended
-          --hostname="{{ hostname }}"
-          --ip-address="{{ ip_address }}"
-          --domain="{{ domain_name }}"
-          --realm="{{ realm_name }}"
-          --setup-dns
-          --forwarder="{{ forwarder_dns }}"
-          -p "{{ dir_manager_password }}"
-          -a "{{ admin_password }}"
-      tags: install_script
-
-    - name: Esperar 10 segundos para asegurar que FreeIPA está completamente levantado
-      ansible.builtin.pause:
-        seconds: 10
-      tags: wait_for_ipa
+    - name: Ejecutar la instalación de FreeIPA solo como servidor DNS (sin LDAP)
+      ansible.builtin.shell: |
+        ipa-server-install --unattended \
+        --hostname="{{ hostname }}" \
+        --ip-address="{{ ip_address }}" \
+        --domain="{{ domain_name }}" \
+        --realm="{{ realm_name }}" \
+        --setup-dns \
+        --forwarder="{{ forwarder_dns }}" \
+        --no-ldap \
+        -p "{{ dir_manager_password }}" \
+        -a "{{ admin_password }}"
+      tags: install_freeipa
 
     - name: Habilitar y arrancar el servicio named
       ansible.builtin.systemd:
@@ -141,22 +91,10 @@
         state: started
       tags: enable_named
 
-    - name: Verificar autenticación Kerberos
-      ansible.builtin.command: "klist -s"
-      register: kerberos_status
-      ignore_errors: true
-      changed_when: false
-
-    - name: Autenticarse con Kerberos
+    - name: Configurar reenvío de DNS en FreeIPA
       ansible.builtin.shell: |
         echo "{{ admin_password }}" | kinit admin
-      when: kerberos_status.rc != 0
-      changed_when: false
-      tags: auth_kerberos
-
-    - name: Configurar reenvío de DNS en FreeIPA
-      ansible.builtin.command:
-        cmd: ipa dnsconfig-mod --forwarder={{ forwarder_dns }}
+        ipa dnsconfig-mod --forwarder={{ forwarder_dns }}
       tags: configure_dns
 
     - name: Deshabilitar DNSSEC en la configuración de named
@@ -192,16 +130,24 @@
       notify: Reload firewalld
       tags: firewall
 
-    - name: Añadir registros DNS en FreeIPA
+    - name: Autenticarse con Kerberos para agregar registros DNS
+      ansible.builtin.shell: |
+        echo "{{ admin_password }}" | kinit admin
+      register: kerberos_auth
+      changed_when: false
+      tags: auth_kerberos
+
+    - name: Añadir registros DNS si no existen
       loop: "{{ dns_records }}"
-      ansible.builtin.command:
-        cmd: ipa dnsrecord-add {{ domain_name }} {{ item.name }} --a-rec={{ item.ip }}
-      ignore_errors: true
+      ansible.builtin.shell: |
+        ipa dnsrecord-find {{ domain_name }} {{ item.name }} --a-rec={{ item.ip }} || \
+        ipa dnsrecord-add {{ domain_name }} {{ item.name }} --a-rec={{ item.ip }}
+      ignore_errors: false
       tags: add_dns_records
 
     - name: Configurar alias DNS para balanceadores (round-robin DNS)
-      ansible.builtin.command:
-        cmd: ipa dnsrecord-add {{ domain_name }} loadbalancer --a-rec 10.17.3.12 --a-rec 10.17.3.13
+      ansible.builtin.shell: |
+        ipa dnsrecord-add {{ domain_name }} loadbalancer --a-rec 10.17.3.12 --a-rec 10.17.3.13
       tags: configure_dns_alias
 
   handlers:
