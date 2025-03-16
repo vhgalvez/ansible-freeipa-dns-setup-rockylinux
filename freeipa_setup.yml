@@ -7,21 +7,8 @@
     domain_name: "cefaslocalserver.com"
     realm_name: "CEFASLOCALSERVER.COM"
     forwarder_dns: "8.8.8.8"
-    dir_manager_password: "Admin123!"  # Se necesita aunque no se use LDAP
+    dir_manager_password: "Admin123!"  # Requerido aunque no se use LDAP
     admin_password: "Admin123!"  # Contraseña del admin de IPA
-    dns_records:
-      - { name: "master1", ip: "10.17.4.21" }
-      - { name: "master2", ip: "10.17.4.22" }
-      - { name: "master3", ip: "10.17.4.23" }
-      - { name: "worker1", ip: "10.17.4.24" }
-      - { name: "worker2", ip: "10.17.4.25" }
-      - { name: "worker3", ip: "10.17.4.26" }
-      - { name: "storage1", ip: "10.17.4.27" }
-      - { name: "freeipa1", ip: "10.17.3.11" }
-      - { name: "loadbalancer1", ip: "10.17.3.12" }
-      - { name: "loadbalancer2", ip: "10.17.3.13" }
-      - { name: "postgresql1", ip: "10.17.3.14" }
-      - { name: "bastion1", ip: "192.168.0.20" }
 
   tasks:
     - name: Verificar si FreeIPA DNS ya está instalado
@@ -49,6 +36,33 @@
         - /var/named/dns
       when: freeipa_installed.stat.exists
       tags: cleanup_files
+
+    - name: Asegurar que los directorios de FreeIPA existen
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      loop:
+        - /etc/ipa
+        - /var/lib/ipa
+        - /var/log/ipa
+        - /var/lib/ipa/sysrestore
+        - /var/lib/ipa/sysupgrade
+      tags: ensure_dirs
+
+    - name: Crear archivos de estado faltantes
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: touch
+        owner: root
+        group: root
+        mode: '0644'
+      loop:
+        - /var/lib/ipa/sysrestore/sysrestore.state
+        - /var/lib/ipa/sysupgrade/sysupgrade.state
+      tags: create_state_files
 
     - name: Instalar dependencias necesarias para FreeIPA DNS
       ansible.builtin.dnf:
@@ -82,6 +96,7 @@
         --realm="{{ realm_name }}" \
         --setup-dns \
         --forwarder="{{ forwarder_dns }}" \
+        --no-ntp \
         -p "{{ dir_manager_password }}" \
         -a "{{ admin_password }}"
       tags: install_freeipa_dns
@@ -131,26 +146,6 @@
         - 53/tcp
       notify: Reload firewalld
       tags: firewall
-
-    - name: Autenticarse con Kerberos para agregar registros DNS
-      ansible.builtin.shell: |
-        echo "{{ admin_password }}" | kinit admin
-      register: kerberos_auth
-      changed_when: false
-      tags: auth_kerberos
-
-    - name: Añadir registros DNS si no existen
-      loop: "{{ dns_records }}"
-      ansible.builtin.shell: |
-        ipa dnsrecord-find {{ domain_name }} {{ item.name }} --a-rec={{ item.ip }} || \
-        ipa dnsrecord-add {{ domain_name }} {{ item.name }} --a-rec={{ item.ip }}
-      ignore_errors: false
-      tags: add_dns_records
-
-    - name: Configurar alias DNS para balanceadores (round-robin DNS)
-      ansible.builtin.shell: |
-        ipa dnsrecord-add {{ domain_name }} loadbalancer --a-rec 10.17.3.12 --a-rec 10.17.3.13
-      tags: configure_dns_alias
 
   handlers:
     - name: Reload firewalld
