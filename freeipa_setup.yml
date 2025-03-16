@@ -55,18 +55,32 @@
       when: not freeipa_installed.stat.exists
       tags: update_system
 
-    - name: Configurar el nombre de host
-      ansible.builtin.hostname:
-        name: "{{ hostname }}"
-      tags: set_hostname
+    - name: Habilitar el repositorio FreeIPA en AlmaLinux (si no está activado)
+      ansible.builtin.command: dnf module enable -y idm:DL1
+      register: enable_idm
+      changed_when: "'Enabling module streams' in enable_idm.stdout"
+      tags: enable_repo
 
-    - name: Instalar FreeIPA y servidor DNS
+    - name: Instalar FreeIPA y servidor DNS (Forzar instalación si no está presente)
       ansible.builtin.yum:
         name:
           - ipa-server
           - ipa-server-dns
         state: present
+        update_cache: true
       tags: install_freeipa
+
+    - name: Verificar si el comando ipa-server-install existe
+      ansible.builtin.shell: "which ipa-server-install"
+      register: ipa_server_install_path
+      changed_when: false
+      failed_when: ipa_server_install_path.rc != 0
+      tags: verify_install
+
+    - name: Configurar el nombre de host
+      ansible.builtin.hostname:
+        name: "{{ hostname }}"
+      tags: set_hostname
 
     - name: Ejecutar la instalación de FreeIPA
       ansible.builtin.shell: |
