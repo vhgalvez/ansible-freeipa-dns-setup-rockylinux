@@ -7,7 +7,6 @@
     domain_name: "cefaslocalserver.com"
     realm_name: "CEFASLOCALSERVER.COM"
     forwarder_dns: "8.8.8.8"
-    dir_manager_password: "12345678"
     admin_password: "12345678"
     dns_records:
       - { name: "master1", ip: "10.17.4.21" }
@@ -24,14 +23,16 @@
       - { name: "bastion1", ip: "192.168.0.20" }
 
   tasks:
-    - name: Verificar si FreeIPA ya está instalado
+    - name: Verificar si FreeIPA DNS ya está instalado
       ansible.builtin.stat:
         path: /etc/ipa/default.conf
       register: freeipa_installed
       tags: check_freeipa
 
-    - name: Desinstalar FreeIPA si ya está instalado
-      ansible.builtin.shell: ipa-server-install --uninstall -U
+    - name: Detener y desinstalar FreeIPA si ya está instalado
+      ansible.builtin.shell: |
+        ipactl stop
+        ipa-server-install --uninstall -U
       when: freeipa_installed.stat.exists
       ignore_errors: true
       tags: uninstall_freeipa
@@ -48,29 +49,30 @@
       when: freeipa_installed.stat.exists
       tags: cleanup_files
 
-    - name: Asegurar que no haya procesos ocupando el puerto 389 (LDAP)
-      ansible.builtin.shell: "fuser -k 389/tcp || true"
-      tags: free_port
-
-    - name: Instalar FreeIPA y dependencias necesarias
-      ansible.builtin.yum:
+    - name: Instalar dependencias necesarias para FreeIPA DNS
+      ansible.builtin.dnf:
         name:
           - ipa-server
           - ipa-server-dns
           - bind
           - bind-utils
-          - chrony
-          - firewalld
         state: present
         update_cache: true
-      tags: install_packages
+      tags: install_dependencies
 
     - name: Configurar el nombre de host
       ansible.builtin.hostname:
         name: "{{ hostname }}"
       tags: set_hostname
 
-    - name: Ejecutar la instalación de FreeIPA con DNS
+    - name: Configurar archivo hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ ip_address }} {{ hostname }} freeipa1"
+        state: present
+      tags: set_hosts
+
+    - name: Iniciar la instalación de FreeIPA solo como servidor DNS
       ansible.builtin.shell: |
         ipa-server-install --unattended \
         --hostname="{{ hostname }}" \
@@ -79,11 +81,10 @@
         --realm="{{ realm_name }}" \
         --setup-dns \
         --forwarder="{{ forwarder_dns }}" \
-        -p "{{ dir_manager_password }}" \
         -a "{{ admin_password }}"
-      tags: install_freeipa
+      tags: install_freeipa_dns
 
-    - name: Habilitar y arrancar el servicio named
+    - name: Habilitar y arrancar el servicio named (DNS)
       ansible.builtin.systemd:
         name: named
         enabled: true
