@@ -3,57 +3,90 @@
   become: true
   vars:
     domain_name: "cefaslocalserver.com"
-    dns_forwarders: "8.8.8.8"
+    forwarder_dns: "8.8.8.8"
     dns_records:
+      - { name: "freeipa1", ip: "10.17.3.11" }
+      - { name: "bootstrap", ip: "10.17.3.12" }
       - { name: "master1", ip: "10.17.4.21" }
       - { name: "master2", ip: "10.17.4.22" }
       - { name: "master3", ip: "10.17.4.23" }
       - { name: "worker1", ip: "10.17.4.24" }
       - { name: "worker2", ip: "10.17.4.25" }
       - { name: "worker3", ip: "10.17.4.26" }
-      - { name: "storage1", ip: "10.17.4.27" }
-      - { name: "freeipa1", ip: "10.17.3.11" }
-      - { name: "loadbalancer1", ip: "10.17.3.12" }
-      - { name: "loadbalancer2", ip: "10.17.3.13" }
+      - { name: "load_balancer1", ip: "10.17.3.13" }
       - { name: "postgresql1", ip: "10.17.3.14" }
-      - { name: "bastion1", ip: "192.168.0.20" }
+      - { name: "helper", ip: "10.17.3.15" }
 
   tasks:
-    - name: Instalar BIND y herramientas de DNS
-      ansible.builtin.dnf:
+    - name: Verificar si FreeIPA está instalado
+      ansible.builtin.shell: "rpm -q ipa-server || echo 'not_installed'"
+      register: freeipa_installed
+      changed_when: false
+
+    - name: Desinstalar FreeIPA si está instalado
+      ansible.builtin.shell: "ipa-server-install --uninstall -U"
+      when: "'not_installed' not in freeipa_installed.stdout"
+      ignore_errors: true
+
+    - name: Verificar si BIND está instalado
+      ansible.builtin.shell: "rpm -q bind || echo 'not_installed'"
+      register: bind_installed
+      changed_when: false
+
+    - name: Desinstalar BIND si está instalado
+      ansible.builtin.yum:
+        name: bind
+        state: absent
+      when: "'not_installed' not in bind_installed.stdout"
+
+    - name: Eliminar archivos residuales de FreeIPA y BIND
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/ipa
+        - /var/lib/ipa
+        - /var/log/ipa
+        - /var/named
+        - /etc/named.conf
+        - /etc/named
+        - /var/lib/dirsrv
+        - /var/log/named
+
+    - name: Actualizar el sistema
+      ansible.builtin.yum:
+        name: "*"
+        state: latest
+        update_cache: true
+
+    - name: Instalar paquetes necesarios para BIND DNS
+      ansible.builtin.yum:
         name:
           - bind
           - bind-utils
         state: present
-        update_cache: true
-      tags: install_bind
 
-    - name: Configurar archivo named.conf
+    - name: Configurar named.conf
       ansible.builtin.template:
-        src: named.conf.j2
+        src: templates/named.conf.j2
         dest: /etc/named.conf
         owner: root
         group: named
-        mode: "0644"
-      notify: Restart named
-      tags: configure_bind
+        mode: '0644'
 
-    - name: Configurar zona DNS
+    - name: Configurar zona DNS en named
       ansible.builtin.template:
-        src: db.zone.j2
-        dest: "/var/named/{{ domain_name }}.zone"
+        src: templates/db.cefaslocalserver.com.j2
+        dest: /var/named/db.cefaslocalserver.com
         owner: named
         group: named
-        mode: "0644"
-      notify: Restart named
-      tags: configure_zone
+        mode: '0644'
 
     - name: Habilitar y arrancar el servicio named
       ansible.builtin.systemd:
         name: named
         enabled: true
         state: started
-      tags: enable_named
 
     - name: Abrir puertos en el firewall para DNS
       ansible.builtin.firewalld:
@@ -63,16 +96,10 @@
       loop:
         - 53/tcp
         - 53/udp
-      notify: Reload firewalld
-      tags: firewall
+      notify: Restart firewalld
 
   handlers:
-    - name: Restart named
-      ansible.builtin.systemd:
-        name: named
-        state: restarted
-
-    - name: Reload firewalld
+    - name: Restart firewalld
       ansible.builtin.systemd:
         name: firewalld
         state: reloaded
