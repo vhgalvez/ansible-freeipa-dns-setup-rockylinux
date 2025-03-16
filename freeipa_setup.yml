@@ -6,17 +6,18 @@
     domain_name: "cefaslocalserver.com"
     dns_forwarders: "8.8.8.8; 8.8.4.4;"
     dns_records:
-      - { name: "freeipa1", ip: "10.17.3.11" }
-      - { name: "bootstrap", ip: "10.17.3.12" }
       - { name: "master1", ip: "10.17.4.21" }
       - { name: "master2", ip: "10.17.4.22" }
       - { name: "master3", ip: "10.17.4.23" }
       - { name: "worker1", ip: "10.17.4.24" }
       - { name: "worker2", ip: "10.17.4.25" }
       - { name: "worker3", ip: "10.17.4.26" }
-      - { name: "load_balancer1", ip: "10.17.3.13" }
+      - { name: "storage1", ip: "10.17.4.27" }
+      - { name: "freeipa1", ip: "10.17.3.11" }
+      - { name: "loadbalancer1", ip: "10.17.3.12" }
+      - { name: "loadbalancer2", ip: "10.17.3.13" }
       - { name: "postgresql1", ip: "10.17.3.14" }
-      - { name: "helper", ip: "10.17.3.15" }
+      - { name: "bastion1", ip: "192.168.0.20" }
 
   tasks:
     - name: Verificar si FreeIPA está instalado
@@ -84,6 +85,13 @@
         owner: named
         group: named
         mode: '0644'
+
+    - name: Verificar sintaxis de la zona DNS
+      ansible.builtin.command:
+        cmd: "named-checkzone {{ domain_name }} /var/named/db.{{ domain_name }}"
+      register: zone_check
+      changed_when: false
+      ignore_errors: false
 
     - name: Habilitar y arrancar el servicio named
       ansible.builtin.systemd:
