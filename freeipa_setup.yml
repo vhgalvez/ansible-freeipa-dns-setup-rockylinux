@@ -7,7 +7,8 @@
     domain_name: "cefaslocalserver.com"
     realm_name: "CEFASLOCALSERVER.COM"
     forwarder_dns: "8.8.8.8"
-    admin_password: "12345678"
+    dir_manager_password: "Admin123!"  # Se necesita aunque no se use LDAP
+    admin_password: "Admin123!"  # Contraseña del admin de IPA
     dns_records:
       - { name: "master1", ip: "10.17.4.21" }
       - { name: "master2", ip: "10.17.4.22" }
@@ -81,6 +82,7 @@
         --realm="{{ realm_name }}" \
         --setup-dns \
         --forwarder="{{ forwarder_dns }}" \
+        -p "{{ dir_manager_password }}" \
         -a "{{ admin_password }}"
       tags: install_freeipa_dns
 
