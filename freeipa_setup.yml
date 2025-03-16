@@ -1,9 +1,10 @@
+---
 - name: Instalación y configuración de BIND DNS en AlmaLinux
   hosts: freeipa_servers
   become: true
   vars:
     domain_name: "cefaslocalserver.com"
-    forwarder_dns: "8.8.8.8"
+    dns_forwarders: "8.8.8.8; 8.8.4.4;"
     dns_records:
       - { name: "freeipa1", ip: "10.17.3.11" }
       - { name: "bootstrap", ip: "10.17.3.12" }
@@ -19,25 +20,27 @@
 
   tasks:
     - name: Verificar si FreeIPA está instalado
-      ansible.builtin.shell: "rpm -q ipa-server || echo 'not_installed'"
+      ansible.builtin.command: "rpm -q ipa-server"
       register: freeipa_installed
+      ignore_errors: true
       changed_when: false
 
     - name: Desinstalar FreeIPA si está instalado
-      ansible.builtin.shell: "ipa-server-install --uninstall -U"
-      when: "'not_installed' not in freeipa_installed.stdout"
+      ansible.builtin.command: "ipa-server-install --uninstall -U"
+      when: freeipa_installed.rc == 0
       ignore_errors: true
 
     - name: Verificar si BIND está instalado
-      ansible.builtin.shell: "rpm -q bind || echo 'not_installed'"
+      ansible.builtin.command: "rpm -q bind"
       register: bind_installed
+      ignore_errors: true
       changed_when: false
 
     - name: Desinstalar BIND si está instalado
       ansible.builtin.yum:
         name: bind
         state: absent
-      when: "'not_installed' not in bind_installed.stdout"
+      when: bind_installed.rc == 0
 
     - name: Eliminar archivos residuales de FreeIPA y BIND
       ansible.builtin.file:
@@ -76,8 +79,8 @@
 
     - name: Configurar zona DNS en named
       ansible.builtin.template:
-        src: templates/db.cefaslocalserver.com.j2
-        dest: /var/named/db.cefaslocalserver.com
+        src: templates/db.zone.j2
+        dest: /var/named/db.{{ domain_name }}
         owner: named
         group: named
         mode: '0644'
