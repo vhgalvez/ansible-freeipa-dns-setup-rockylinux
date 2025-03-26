@@ -99,6 +99,12 @@
         enabled: true
         state: started
 
+    # Nueva tarea: Instalar python3-firewall si falta
+    - name: Instalar python3-firewall (para usar firewalld module)
+      ansible.builtin.yum:
+        name: python3-firewall
+        state: present
+
     - name: Abrir puertos en el firewall para DNS
       ansible.builtin.firewalld:
         port: "{{ item }}"
