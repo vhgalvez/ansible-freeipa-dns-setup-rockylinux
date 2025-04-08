@@ -1,18 +1,12 @@
-version: '3'
-
+version: '3.7'
 services:
   coredns:
     image: coredns/coredns:latest
     container_name: coredns
+    volumes:
+      - /etc/coredns/Corefile:/etc/coredns/Corefile
+      - /etc/hosts:/etc/hosts
     ports:
       - "53:53/tcp"
       - "53:53/udp"
-    volumes:
-      - ./Corefile:/etc/coredns/Corefile
-    networks:
-      - default
-    restart: unless-stopped
-
-networks:
-  default:
-    driver: bridge
+    restart: always

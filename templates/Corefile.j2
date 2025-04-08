@@ -1,7 +1,4 @@
 . {
-    hosts /etc/hosts {
-        fallthrough
-    }
     forward . 8.8.8.8 8.8.4.4
     log
     errors
@@ -9,10 +6,13 @@
 }
 
 {{ domain_name }} {
+    hosts /etc/hosts {
+        fallthrough
+    }
     hosts {
-        {% for record in dns_records %}
+{% for record in dns_records %}
         {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
-        {% endfor %}
+{% endfor %}
         fallthrough
     }
     log
