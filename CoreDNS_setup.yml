@@ -10,6 +10,20 @@
     kubeconfig_path: "/etc/coredns/coredns-kubeconfig.yaml"
     k8s_api_vip: "10.17.5.10"
     master1_ip: "10.17.4.21"
+    dns_records:
+        - { name: "master1", ip: "10.17.4.21" }
+        - { name: "master2", ip: "10.17.4.22" }
+        - { name: "master3", ip: "10.17.4.23" }
+        - { name: "worker1", ip: "10.17.4.24" }
+        - { name: "worker2", ip: "10.17.4.25" }
+        - { name: "worker3", ip: "10.17.4.26" }
+        - { name: "storage1", ip: "10.17.4.27" }
+        - { name: "freeipa1", ip: "10.17.3.11" }
+        - { name: "loadbalancer1", ip: "10.17.3.12" }
+        - { name: "loadbalancer2", ip: "10.17.3.13" }
+        - { name: "postgresql1", ip: "10.17.3.14" }
+        - { name: "k8s-api-lb", ip: "10.17.5.10" }
+        - { name: "k8s-api-lb", ip: "10.17.5.20" }
 
   tasks:
     # 1. Crear directorios para CoreDNS
@@ -92,3 +106,5 @@
     - name: Mostrar estado del contenedor CoreDNS
       debug:
         msg: "{{ coredns_status.stdout_lines }}"
+
+
