@@ -1,4 +1,3 @@
----
 - name: Instalar y configurar Podman, Podman Compose y CoreDNS en contenedor
   hosts: freeipa_servers
   become: true
@@ -24,38 +23,28 @@
       - { name: "k8s-api-lb", ip: "10.17.5.20" }
 
   tasks:
-    # 1. Asegurarse de que /usr/local/bin está en el PATH
     - name: Asegurarse de que /usr/local/bin está en el PATH
-      shell: |
-        echo $PATH
+      shell: echo $PATH
       register: path_check
 
-    # 2. Instalar Podman
     - name: Instalar Podman
-      shell: |
-        sudo dnf install -y podman
+      shell: sudo dnf install -y podman
       when: "'podman' not in path_check.stdout"
 
-    # 3. Instalar python3-pip si no está instalado
     - name: Instalar python3-pip si no está instalado
-      shell: |
-        sudo dnf install -y python3-pip
+      shell: sudo dnf install -y python3-pip
       when: "'pip3' not in path_check.stdout"
 
-    # 4. Verificar si Podman Compose está instalado
     - name: Verificar si Podman Compose está instalado
       shell: podman-compose --version
       register: podman_compose_installed
       failed_when: false
       changed_when: false
 
-    # 5. Instalar Podman Compose
     - name: Instalar Podman Compose
-      shell: |
-        pip3 install podman-compose
+      shell: pip3 install podman-compose
       when: podman_compose_installed.rc != 0
 
-    # 6. Crear directorios para CoreDNS
     - name: Crear directorios para CoreDNS
       file:
         path: "{{ item }}"
@@ -66,7 +55,6 @@
         - "{{ coredns_config_dir }}/certs"
         - "{{ coredns_config_dir }}/dynamic_conf"
 
-    # 7. Crear archivo de configuración de CoreDNS (Corefile)
     - name: Crear archivo de configuración de CoreDNS (Corefile)
       ansible.builtin.template:
         src: templates/Corefile.j2
@@ -75,8 +63,7 @@
         group: root
         mode: '0644'
 
-    # 8. Generar archivo docker-compose.yml para CoreDNS
-    - name: Generar archivo docker-compose.yml
+    - name: Generar archivo docker-compose.yml para CoreDNS
       ansible.builtin.template:
         src: "templates/coredns/docker-compose.yml.j2"
         dest: "{{ coredns_config_dir }}/docker-compose.yml"
@@ -84,22 +71,7 @@
       vars:
         vip: "{{ k8s_api_vip }}"
 
-    # 9. Verificar si Docker Compose está instalado
-    - name: Verificar si docker-compose está instalado
-      shell: docker-compose --version
-      register: docker_compose_installed
-      failed_when: false
-      changed_when: false
-
-    # 10. Instalar docker-compose si no está instalado
-    - name: Instalar docker-compose si no está instalado
-      shell: |
-        curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        chmod +x /usr/local/bin/docker-compose
-      when: docker_compose_installed.rc != 0
-
-    # 11. Reiniciar contenedor CoreDNS con nuevo archivo de configuración usando Podman Compose
-    - name: Reiniciar contenedor CoreDNS con nuevo archivo de configuración
+    - name: Reiniciar contenedor CoreDNS con nuevo archivo de configuración usando Podman Compose
       shell: |
         export PATH=$PATH:/usr/local/bin
         podman-compose -f {{ coredns_config_dir }}/docker-compose.yml down || true
@@ -107,12 +79,10 @@
       args:
         executable: /bin/bash
 
-    # 12. Verificar estado del contenedor CoreDNS
     - name: Verificar estado del contenedor CoreDNS
       shell: podman ps -a | grep coredns || true
       register: coredns_status
 
-    # 13. Mostrar estado del contenedor CoreDNS
     - name: Mostrar estado del contenedor CoreDNS
       debug:
         msg: "{{ coredns_status.stdout_lines }}"
