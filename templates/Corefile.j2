@@ -1,0 +1,15 @@
+. {
+    forward . 8.8.8.8 8.8.4.4
+    log
+    errors
+}
+
+{{ domain_name }} {
+    hosts {
+{% for record in dns_records %}
+        {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
+{% endfor %}
+        fallthrough
+    }
+    log
+}

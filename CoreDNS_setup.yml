@@ -1,0 +1,96 @@
+# CoreDNS_setup.yml
+---
+- name: Instalación y configuración de CoreDNS como DNS local
+  hosts: freeipa_servers
+  become: true
+
+  vars:
+    domain_name: "cefaslocalserver.com"
+    dns_records:
+      - { name: "master1", ip: "10.17.4.21" }
+      - { name: "master2", ip: "10.17.4.22" }
+      - { name: "master3", ip: "10.17.4.23" }
+      - { name: "worker1", ip: "10.17.4.24" }
+      - { name: "worker2", ip: "10.17.4.25" }
+      - { name: "worker3", ip: "10.17.4.26" }
+      - { name: "storage1", ip: "10.17.4.27" }
+      - { name: "coreinfra", ip: "10.17.3.11" }
+      - { name: "loadbalancer1", ip: "10.17.3.12" }
+      - { name: "loadbalancer2", ip: "10.17.3.13" }
+      - { name: "postgresql1", ip: "10.17.3.14" }
+      - { name: "k8s-api-lb", ip: "10.17.5.10" }
+
+  tasks:
+    - name: Eliminar instalación manual de CoreDNS si existe
+      ansible.builtin.file:
+        path: /usr/local/bin/coredns
+        state: absent
+      ignore_errors: true
+
+    - name: Limpiar archivos residuales antiguos de CoreDNS
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/systemd/system/coredns.service
+        - /var/log/coredns
+        - /var/run/coredns
+        - /var/lib/coredns
+      ignore_errors: true
+
+    - name: Instalar CoreDNS desde repositorio
+      ansible.builtin.yum:
+        name: coredns
+        state: present
+
+    - name: Crear directorio de configuración de CoreDNS si no existe
+      ansible.builtin.file:
+        path: /etc/coredns
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Crear archivo Corefile con registros personalizados
+      ansible.builtin.template:
+        src: templates/Corefile.j2
+        dest: /etc/coredns/Corefile
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart CoreDNS
+
+    - name: Habilitar y arrancar CoreDNS
+      ansible.builtin.systemd:
+        name: coredns
+        enabled: true
+        state: started
+
+    - name: Validar que el servicio CoreDNS está activo
+      ansible.builtin.systemd:
+        name: coredns
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Abrir puertos DNS en el firewall
+      ansible.builtin.firewalld:
+        port: "{{ item }}"
+        permanent: true
+        state: enabled
+      loop:
+        - 53/tcp
+        - 53/udp
+      notify: Restart firewalld
+
+  handlers:
+    - name: Restart CoreDNS
+      ansible.builtin.systemd:
+        name: coredns
+        state: restarted
+        enabled: true
+
+    - name: Restart firewalld
+      ansible.builtin.systemd:
+        name: firewalld
+        state: reloaded
