@@ -6,9 +6,6 @@
 }
 
 {{ domain_name }} {
-    hosts /etc/hosts {
-        fallthrough
-    }
     hosts {
 {% for record in dns_records %}
         {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
