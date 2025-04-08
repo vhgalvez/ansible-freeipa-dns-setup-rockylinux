@@ -13,44 +13,13 @@
         state: latest
         update_cache: true
 
-    # 2. Instalar Docker si no está instalado
-    - name: Verificar si Docker está instalado
-      ansible.builtin.command:
-        cmd: docker --version
-      register: docker_installed
-      ignore_errors: true
-
-    - name: Instalar Docker si no está instalado
+    # 2. Instalar CoreDNS desde el repositorio
+    - name: Instalar CoreDNS desde repositorio
       ansible.builtin.yum:
-        name: docker
-        state: present
-      when: docker_installed.rc != 0
-
-    - name: Iniciar y habilitar Docker
-      ansible.builtin.systemd:
-        name: docker
-        enabled: true
-        state: started
-
-    # 3. Configurar CoreDNS en un contenedor Docker
-    - name: Descargar la imagen de CoreDNS
-      ansible.builtin.docker_image:
-        name: coredns/coredns
-        source: pull
-
-    - name: Ejecutar CoreDNS en un contenedor Docker
-      ansible.builtin.docker_container:
         name: coredns
-        image: coredns/coredns
-        state: started
-        ports:
-          - "53:53/udp"
-          - "53:53/tcp"
-        volumes:
-          - /etc/coredns:/etc/coredns
-        restart_policy: unless-stopped
+        state: present
 
-    # 4. Crear archivo de configuración CoreDNS usando plantilla
+    # 3. Crear archivo de configuración CoreDNS (Corefile)
     - name: Crear archivo de configuración de CoreDNS (Corefile)
       ansible.builtin.template:
         src: templates/Corefile.j2
@@ -59,7 +28,20 @@
         group: root
         mode: '0644'
     
-    # 5. Verificar si el puerto 53 está abierto en el firewall para CoreDNS
+    # 4. Habilitar y arrancar CoreDNS como servicio
+    - name: Habilitar y arrancar CoreDNS
+      ansible.builtin.systemd:
+        name: coredns
+        enabled: true
+        state: started
+
+    # 5. Verificar el estado de CoreDNS
+    - name: Verificar el estado de CoreDNS
+      ansible.builtin.systemd:
+        name: coredns
+        state: started
+
+    # 6. Abrir puertos 53 en firewalld
     - name: Abrir puertos 53 en firewalld
       ansible.builtin.firewalld:
         port: "{{ item }}"
