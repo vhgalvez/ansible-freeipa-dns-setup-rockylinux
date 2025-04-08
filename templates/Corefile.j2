@@ -1,7 +1,11 @@
 . {
+    hosts /etc/hosts {
+        fallthrough
+    }
     forward . 8.8.8.8 8.8.4.4
     log
     errors
+    cache 30
 }
 
 {{ domain_name }} {
@@ -12,4 +16,6 @@
         fallthrough
     }
     log
+    errors
+    cache 30
 }
