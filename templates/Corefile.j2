@@ -10,9 +10,9 @@
 
 {{ domain_name }} {
     hosts {
-{% for record in dns_records %}
+        {% for record in dns_records %}
         {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
-{% endfor %}
+        {% endfor %}
         fallthrough
     }
     log

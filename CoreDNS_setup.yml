@@ -1,6 +1,6 @@
 # CoreDNS_setup.yml
 ---
-- name: Actualizar y configurar CoreDNS en la máquina virtual
+- name: Actualizar y configurar CoreDNS en la máquina virtual con Docker
   hosts: freeipa_servers
   become: true
   gather_facts: yes
@@ -13,35 +13,53 @@
         state: latest
         update_cache: true
 
-    # 2. Instalar CoreDNS desde el repositorio
-    - name: Instalar CoreDNS desde repositorio
+    # 2. Instalar Docker
+    - name: Instalar Docker
       ansible.builtin.yum:
-        name: coredns
+        name: docker
         state: present
 
-    # 3. Crear archivo de configuración CoreDNS (Corefile)
-    - name: Crear archivo de configuración de CoreDNS (Corefile)
-      ansible.builtin.template:
-        src: templates/Corefile.j2
-        dest: /etc/coredns/Corefile
-        owner: root
-        group: root
-        mode: '0644'
-    
-    # 4. Habilitar y arrancar CoreDNS como servicio
-    - name: Habilitar y arrancar CoreDNS
+    # 3. Iniciar y habilitar Docker
+    - name: Iniciar y habilitar Docker
       ansible.builtin.systemd:
-        name: coredns
+        name: docker
         enabled: true
         state: started
 
-    # 5. Verificar el estado de CoreDNS
-    - name: Verificar el estado de CoreDNS
-      ansible.builtin.systemd:
-        name: coredns
-        state: started
+    # 4. Instalar Docker Compose
+    - name: Instalar Docker Compose
+      ansible.builtin.command:
+        cmd: "curl -L https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose"
+        creates: /usr/local/bin/docker-compose
 
-    # 6. Abrir puertos 53 en firewalld
+    - name: Establecer permisos de Docker Compose
+      ansible.builtin.file:
+        path: /usr/local/bin/docker-compose
+        mode: "0755"
+
+    # 5. Descargar e instalar CoreDNS con Docker Compose
+    - name: Crear archivo docker-compose.yml para CoreDNS
+      ansible.builtin.template:
+        src: templates/docker-compose.yml.j2
+        dest: /opt/coredns/docker-compose.yml
+        mode: "0644"
+
+    # 6. Iniciar CoreDNS con Docker Compose
+    - name: Iniciar CoreDNS con Docker Compose
+      ansible.builtin.command:
+        cmd: "docker-compose -f /opt/coredns/docker-compose.yml up -d"
+
+    # 7. Verificar el estado de CoreDNS
+    - name: Verificar si CoreDNS está corriendo
+      ansible.builtin.command:
+        cmd: "docker ps -f name=coredns"
+      register: coredns_status
+
+    - name: Mostrar estado de CoreDNS
+      debug:
+        var: coredns_status.stdout
+
+    # 8. Abrir puertos 53 en firewalld
     - name: Abrir puertos 53 en firewalld
       ansible.builtin.firewalld:
         port: "{{ item }}"
