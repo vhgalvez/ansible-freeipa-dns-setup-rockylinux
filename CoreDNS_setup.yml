@@ -5,8 +5,6 @@
 
   vars:
     coredns_config_dir: "/etc/coredns"
-    coredns_token_path: "/mnt/coredns-token/coredns.jwt"
-    nfs_backup_token_path: "/srv/nfs/coredns-token/coredns.jwt"
     kubeconfig_path: "/etc/coredns/coredns-kubeconfig.yaml"
     k8s_api_vip: "10.17.5.10"
     master1_ip: "10.17.4.21"
@@ -37,41 +35,7 @@
         - "{{ coredns_config_dir }}/certs"
         - "{{ coredns_config_dir }}/dynamic_conf"
 
-    # 2. Crear directorio local para montar NFS
-    - name: Crear directorio local para montar NFS
-      file:
-        path: "/mnt/coredns-token"
-        state: directory
-        mode: "0755"
-
-    # 3. Crear carpeta y exportación NFS en storage1 con raw
-    - name: Crear carpeta y exportación NFS en storage1 con raw
-      delegate_to: 10.17.4.27
-      become: true
-      block:
-        - name: Crear carpeta /srv/nfs/coredns-token con raw
-          raw: mkdir -p /srv/nfs/coredns-token && chmod 0755 /srv/nfs/coredns-token
-
-        - name: Asegurar entrada en /etc/exports
-          raw: |
-            grep -q "/srv/nfs/coredns-token" /etc/exports || echo "/srv/nfs/coredns-token 10.17.3.0/24(rw,sync,no_subtree_check)" >> /etc/exports
-
-        - name: Aplicar exportfs y reiniciar nfs-server
-          raw: |
-            exportfs -rav
-            systemctl restart nfs-server
-
-    # 4. Montar NFS con token coredns.jwt desde storage1
-    - name: Montar NFS con token coredns.jwt desde storage1 (con manejo de error)
-      shell: |
-        mkdir -p /mnt/coredns-token
-        mountpoint -q /mnt/coredns-token || mount -t nfs 10.17.4.27:/srv/nfs/coredns-token /mnt/coredns-token
-      args:
-        executable: /bin/bash
-      register: mount_result
-      failed_when: mount_result.rc != 0 and 'access denied' not in mount_result.stderr
-
-    # 5. Crear archivo de configuración de CoreDNS
+    # 2. Crear archivo de configuración de CoreDNS
     - name: Crear archivo de configuración de CoreDNS (Corefile)
       ansible.builtin.template:
         src: templates/Corefile.j2
@@ -80,7 +44,7 @@
         group: root
         mode: '0644'
 
-    # 6. Crear archivo docker-compose.yml
+    # 3. Crear archivo docker-compose.yml
     - name: Generar archivo docker-compose.yml
       ansible.builtin.template:
         src: "{{ playbook_dir }}/templates/coredns/docker-compose.yml.j2"
@@ -89,22 +53,20 @@
       vars:
         vip: "{{ k8s_api_vip }}"
 
-    # 7. Reiniciar contenedor CoreDNS con nuevo archivo de configuración
-    - name: Reiniciar contenedor CoreDNS con nuevo token
+    # 4. Reiniciar contenedor CoreDNS con el nuevo archivo de configuración
+    - name: Reiniciar contenedor CoreDNS con nuevo archivo de configuración
       shell: |
         docker compose -f {{ coredns_config_dir }}/docker-compose.yml down || true
         docker compose -f {{ coredns_config_dir }}/docker-compose.yml up -d
       args:
         executable: /bin/bash
 
-    # 8. Verificar estado del contenedor CoreDNS
+    # 5. Verificar estado del contenedor CoreDNS
     - name: Verificar estado del contenedor CoreDNS
       shell: docker ps -a | grep coredns || true
       register: coredns_status
 
-    # 9. Mostrar estado del contenedor CoreDNS
+    # 6. Mostrar estado del contenedor CoreDNS
     - name: Mostrar estado del contenedor CoreDNS
       debug:
         msg: "{{ coredns_status.stdout_lines }}"
-
-
