@@ -9,19 +9,19 @@
     k8s_api_vip: "10.17.5.10"
     master1_ip: "10.17.4.21"
     dns_records:
-        - { name: "master1", ip: "10.17.4.21" }
-        - { name: "master2", ip: "10.17.4.22" }
-        - { name: "master3", ip: "10.17.4.23" }
-        - { name: "worker1", ip: "10.17.4.24" }
-        - { name: "worker2", ip: "10.17.4.25" }
-        - { name: "worker3", ip: "10.17.4.26" }
-        - { name: "storage1", ip: "10.17.4.27" }
-        - { name: "freeipa1", ip: "10.17.3.11" }
-        - { name: "loadbalancer1", ip: "10.17.3.12" }
-        - { name: "loadbalancer2", ip: "10.17.3.13" }
-        - { name: "postgresql1", ip: "10.17.3.14" }
-        - { name: "k8s-api-lb", ip: "10.17.5.10" }
-        - { name: "k8s-api-lb", ip: "10.17.5.20" }
+      - { name: "master1", ip: "10.17.4.21" }
+      - { name: "master2", ip: "10.17.4.22" }
+      - { name: "master3", ip: "10.17.4.23" }
+      - { name: "worker1", ip: "10.17.4.24" }
+      - { name: "worker2", ip: "10.17.4.25" }
+      - { name: "worker3", ip: "10.17.4.26" }
+      - { name: "storage1", ip: "10.17.4.27" }
+      - { name: "freeipa1", ip: "10.17.3.11" }
+      - { name: "loadbalancer1", ip: "10.17.3.12" }
+      - { name: "loadbalancer2", ip: "10.17.3.13" }
+      - { name: "postgresql1", ip: "10.17.3.14" }
+      - { name: "k8s-api-lb", ip: "10.17.5.10" }
+      - { name: "k8s-api-lb", ip: "10.17.5.20" }
 
   tasks:
     # 1. Crear directorios para CoreDNS
@@ -44,29 +44,43 @@
         group: root
         mode: '0644'
 
-    # 3. Crear archivo docker-compose.yml
+    # 3. Verificar si docker-compose está instalado
+    - name: Verificar si docker-compose está instalado
+      shell: docker-compose --version
+      register: docker_compose_installed
+      failed_when: false
+      changed_when: false
+
+    # 4. Si no está instalado, instalar docker-compose
+    - name: Instalar docker-compose si no está instalado
+      shell: |
+        curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+      when: docker_compose_installed.rc != 0
+
+    # 5. Crear archivo docker-compose.yml
     - name: Generar archivo docker-compose.yml
       ansible.builtin.template:
-        src: "templates/docker-compose.yml.j2"
+        src: "templates/coredns/docker-compose.yml.j2"
         dest: "{{ coredns_config_dir }}/docker-compose.yml"
         mode: "0644"
       vars:
         vip: "{{ k8s_api_vip }}"
 
-    # 4. Reiniciar contenedor CoreDNS con el nuevo archivo de configuración
+    # 6. Reiniciar contenedor CoreDNS con el nuevo archivo de configuración
     - name: Reiniciar contenedor CoreDNS con nuevo archivo de configuración
       shell: |
-        docker compose -f {{ coredns_config_dir }}/docker-compose.yml down || true
-        docker compose -f {{ coredns_config_dir }}/docker-compose.yml up -d
+        docker-compose -f {{ coredns_config_dir }}/docker-compose.yml down || true
+        docker-compose -f {{ coredns_config_dir }}/docker-compose.yml up -d
       args:
         executable: /bin/bash
 
-    # 5. Verificar estado del contenedor CoreDNS
+    # 7. Verificar estado del contenedor CoreDNS
     - name: Verificar estado del contenedor CoreDNS
       shell: docker ps -a | grep coredns || true
       register: coredns_status
 
-    # 6. Mostrar estado del contenedor CoreDNS
+    # 8. Mostrar estado del contenedor CoreDNS
     - name: Mostrar estado del contenedor CoreDNS
       debug:
         msg: "{{ coredns_status.stdout_lines }}"
