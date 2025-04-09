@@ -1,117 +1,115 @@
-- name: Instalar y configurar Podman, Podman Compose y CoreDNS en contenedor
+- name: Instalar y configurar CoreDNS como servidor DNS en AlmaLinux
   hosts: freeipa_servers
   become: true
 
   vars:
-    coredns_config_dir: "/etc/coredns"
-    kubeconfig_path: "/etc/coredns/coredns-kubeconfig.yaml"
-    k8s_api_vip: "10.17.5.10"
+    coredns_version: "1.12.1"
+    coredns_dir: "/etc/coredns"
+    coredns_bin_path: "/usr/local/bin/coredns"
+    resolv_conf_path: "/etc/resolv.conf"
+    nameservers:
+      - "nameserver 10.17.3.11"
+      - "nameserver 8.8.8.8"
     domain_name: "cefaslocalserver.com"
     dns_records:
       - { name: "master1", ip: "10.17.4.21" }
-      - { name: "master2", ip: "10.17.4.22" }
-      - { name: "master3", ip: "10.17.4.23" }
       - { name: "worker1", ip: "10.17.4.24" }
-      - { name: "worker2", ip: "10.17.4.25" }
-      - { name: "worker3", ip: "10.17.4.26" }
-      - { name: "storage1", ip: "10.17.4.27" }
-      - { name: "freeipa1", ip: "10.17.3.11" }
-      - { name: "loadbalancer1", ip: "10.17.3.12" }
-      - { name: "loadbalancer2", ip: "10.17.3.13" }
-      - { name: "postgresql1", ip: "10.17.3.14" }
-      - { name: "k8s-api-lb", ip: "10.17.5.10" }
-      - { name: "k8s-api-lb", ip: "10.17.5.20" }
 
   tasks:
-    - name: Asegurarse de que /usr/local/bin está en el PATH
-      shell: echo $PATH
-      register: path_check
+    - name: Instalar dependencias necesarias
+      dnf:
+        name:
+          - curl
+          - tar
+          - policycoreutils
+          - policycoreutils-python-utils
+          - selinux-policy
+          - selinux-policy-targeted
+        state: present
 
-    - name: Desactivar temporalmente SELinux
-      shell: sudo setenforce 0
-
-    - name: Iniciar y habilitar el socket de Podman
-      systemd:
-        name: podman.socket
-        state: started
-        enabled: yes
-
-    - name: Iniciar y habilitar el servicio de Podman
-      systemd:
-        name: podman.service
-        state: started
-        enabled: yes
-
-    - name: Instalar Podman si no está instalado
-      shell: sudo dnf install -y podman
-      when: "'podman' not in path_check.stdout"
-
-    - name: Instalar python3-pip si no está instalado
-      shell: sudo dnf install -y python3-pip
-      when: "'pip3' not in path_check.stdout"
-
-    - name: Instalar bind-utils y net-tools
-      shell: sudo dnf install -y bind-utils net-tools
-      become: true
-
-    - name: Verificar si Podman Compose está instalado
-      shell: podman-compose --version
-      register: podman_compose_installed
-      failed_when: false
-      changed_when: false
-
-    - name: Instalar Podman Compose si no está instalado
-      shell: sudo pip3 install podman-compose
-      when: podman_compose_installed.rc != 0
-
-    - name: Agregar podman-compose al PATH si no está
-      shell: echo "export PATH=$PATH:/usr/local/bin" >> /etc/profile
-      become: true
-      when: podman_compose_installed.rc != 0
-
-    - name: Crear directorios para CoreDNS
+    - name: Crear carpeta para CoreDNS
       file:
-        path: "{{ item }}"
+        path: "{{ coredns_dir }}"
         state: directory
-        mode: "0755"
-      loop:
-        - "{{ coredns_config_dir }}"
-        - "{{ coredns_config_dir }}/certs"
-        - "{{ coredns_config_dir }}/dynamic_conf"
+        mode: '0755'
 
-    - name: Crear archivo de configuración de CoreDNS (Corefile)
-      ansible.builtin.template:
-        src: templates/Corefile.j2
-        dest: "{{ coredns_config_dir }}/Corefile"
-        owner: root
-        group: root
-        mode: '0644'
+    - name: Descargar CoreDNS
+      get_url:
+        url: "https://github.com/coredns/coredns/releases/download/v{{ coredns_version }}/coredns_{{ coredns_version }}_linux_amd64.tgz"
+        dest: "/tmp/coredns.tgz"
 
-    - name: Crear archivo docker-compose.yml para CoreDNS
-      ansible.builtin.template:
-        src: templates/coredns/docker-compose.yml.j2
-        dest: "/etc/coredns/docker-compose.yml"
-        owner: root
-        group: root
-        mode: '0644'
+    - name: Extraer y mover CoreDNS a /usr/local/bin
+      unarchive:
+        src: "/tmp/coredns.tgz"
+        dest: "/usr/local/bin/"
+        remote_src: yes
+        creates: "{{ coredns_bin_path }}"
 
-    - name: Verificar si el contenedor CoreDNS ya existe
-      shell: podman ps -a | grep "coredns"
-      register: existing_coredns_container
-      changed_when: existing_coredns_container.rc == 0
-      failed_when: existing_coredns_container.rc > 1
+    - name: Asignar permisos al binario
+      file:
+        path: "{{ coredns_bin_path }}"
+        mode: '0755'
 
-    - name: Eliminar el contenedor CoreDNS si ya existe
-      shell: podman stop coredns && podman rm -f coredns
-      when: existing_coredns_container.stdout != ""
+    - name: Crear archivo Corefile
+      copy:
+        dest: "{{ coredns_dir }}/Corefile"
+        content: |
+          . {
+              hosts {
+          {% for record in dns_records %}
+                  {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
+          {% endfor %}
+                  fallthrough
+              }
+              forward . 8.8.8.8
+              log
+              errors
+          }
 
-    - name: Iniciar el contenedor CoreDNS con podman-compose
-      shell: |
-        source /etc/profile
-        cd /etc/coredns
-        podman-compose -f docker-compose.yml up -d
-      environment:
-        TZ: UTC
+    - name: Crear usuario de sistema para CoreDNS
+      user:
+        name: coredns
+        system: yes
+        shell: /sbin/nologin
+        home: "{{ coredns_dir }}"
 
-    - name: Activar SELinux nuevamente
-      shell: sudo setenforce 1
+    - name: Crear servicio systemd para CoreDNS
+      copy:
+        dest: /etc/systemd/system/coredns.service
+        content: |
+          [Unit]
+          Description=CoreDNS DNS Server
+          After=network.target
+
+          [Service]
+          User=coredns
+          Group=coredns
+          ExecStart={{ coredns_bin_path }} -conf {{ coredns_dir }}/Corefile
+          WorkingDirectory={{ coredns_dir }}
+          Restart=on-failure
+          LimitNOFILE=1048576
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Aplicar contexto SELinux al directorio de CoreDNS
+      command: semanage fcontext -a -t bin_t "{{ coredns_bin_path }}"
+      ignore_errors: true
+
+    - name: Restaurar contexto SELinux
+      command: restorecon -Rv "{{ coredns_dir }}"
+
+    - name: Recargar systemd y habilitar servicio
+      systemd:
+        daemon_reload: yes
+        name: coredns
+        enabled: yes
+        state: started
+
+    - name: Configurar resolv.conf con servidores DNS
+      copy:
+        dest: "{{ resolv_conf_path }}"
+        content: |
+          {% for ns in nameservers %}
+          {{ ns }}
+          {% endfor %}
