@@ -72,7 +72,7 @@
 
     - name: Eliminar el contenedor CoreDNS si ya existe
       shell: podman rm -f coredns
-      when: existing_coredns_container.stdout != ""
+      when: existing_coredns_container.rc == 0
 
     - name: Iniciar el contenedor CoreDNS con network host
       command: >
