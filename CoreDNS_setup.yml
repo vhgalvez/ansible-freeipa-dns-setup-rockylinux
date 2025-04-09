@@ -1,4 +1,4 @@
-- name: Instalar y configurar Podman, Podman Compose, CoreDNS, y herramientas adicionales
+- name: Instalar y configurar Podman, Podman Compose y CoreDNS en contenedor
   hosts: freeipa_servers
   become: true
 
@@ -35,12 +35,6 @@
       shell: sudo dnf install -y python3-pip
       when: "'pip3' not in path_check.stdout"
 
-    - name: Instalar dnstool
-      shell: sudo dnf install -y dnstool
-
-    - name: Instalar tool-net
-      shell: sudo dnf install -y tool-net
-
     - name: Verificar si Podman Compose está instalado
       shell: podman-compose --version
       register: podman_compose_installed
@@ -50,6 +44,12 @@
     - name: Instalar Podman Compose
       shell: pip3 install podman-compose
       when: podman_compose_installed.rc != 0
+
+    - name: Instalar dnstool
+      shell: sudo dnf install -y dnstool
+
+    - name: Instalar tool-net
+      shell: sudo dnf install -y tool-net
 
     - name: Crear directorios para CoreDNS
       file:
@@ -94,8 +94,8 @@
     - name: Verificar estado del contenedor CoreDNS
       community.general.podman_container_info:
         name: coredns
-      register: coredns_status
+      register: coredns_info
 
     - name: Mostrar estado del contenedor CoreDNS
       debug:
-        msg: "{{ coredns_status.containers[0].State }}"
+        var: coredns_info.containers[0].State
