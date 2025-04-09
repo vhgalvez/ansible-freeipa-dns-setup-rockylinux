@@ -3,12 +3,14 @@ version: '3.8'
 services:
   coredns:
     image: coredns/coredns:latest
+    container_name: coredns
     restart: unless-stopped
     ports:
-      - "1053:53/udp"
-      - "1053:53/tcp"
+      - "53:53/udp"
+      - "53:53/tcp"
+      - "8080:8080"  # Opcional, si deseas habilitar el endpoint de salud
     volumes:
-      - ./Corefile:/etc/coredns/Corefile
+      - "{{ coredns_config_dir }}:/etc/coredns"  # Montaje del directorio de configuración
     environment:
       - TZ=UTC
     networks:
