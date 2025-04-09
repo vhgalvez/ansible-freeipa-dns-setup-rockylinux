@@ -37,8 +37,10 @@
 
     - name: Instalar dnstool y net-tools
       shell: |
-        sudo dnf install -y dnstool net-tools
+        sudo dnf install -y bind-utils net-tools
       become: true
+  
+        when: "'dnstool' not in path_check.stdout"
 
     - name: Verificar si Podman Compose está instalado
       shell: podman-compose --version
