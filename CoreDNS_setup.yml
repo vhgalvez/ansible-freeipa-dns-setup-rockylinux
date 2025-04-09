@@ -49,6 +49,11 @@
       shell: sudo pip3 install podman-compose
       when: podman_compose_installed.rc != 0
 
+    - name: Agregar podman-compose al PATH si no está
+      shell: echo "export PATH=$PATH:/usr/local/bin" >> ~/.bashrc
+      become: true
+      when: podman_compose_installed.rc != 0
+
     - name: Crear directorios para CoreDNS
       file:
         path: "{{ item }}"
