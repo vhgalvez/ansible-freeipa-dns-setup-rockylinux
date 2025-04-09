@@ -25,6 +25,8 @@
           - policycoreutils-python-utils
           - selinux-policy
           - selinux-policy-targeted
+          - bind-utils    # Se añade bind-utils
+          - net-tools     # Se añade net-tools
         state: present
 
     - name: Crear carpeta para CoreDNS
