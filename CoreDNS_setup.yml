@@ -1,4 +1,4 @@
-- name: Instalar y configurar Podman, Podman Compose y CoreDNS en contenedor
+- name: Instalar y configurar Podman, Podman Compose, CoreDNS, y herramientas adicionales
   hosts: freeipa_servers
   become: true
 
@@ -34,6 +34,12 @@
     - name: Instalar python3-pip si no está instalado
       shell: sudo dnf install -y python3-pip
       when: "'pip3' not in path_check.stdout"
+
+    - name: Instalar dnstool
+      shell: sudo dnf install -y dnstool
+
+    - name: Instalar tool-net
+      shell: sudo dnf install -y tool-net
 
     - name: Verificar si Podman Compose está instalado
       shell: podman-compose --version
@@ -72,7 +78,7 @@
 
     - name: Eliminar el contenedor CoreDNS si ya existe
       shell: podman rm -f coredns
-      when: existing_coredns_container.rc == 0
+      when: existing_coredns_container.stdout != ""
 
     - name: Iniciar el contenedor CoreDNS con network host
       command: >
@@ -86,9 +92,10 @@
         TZ: UTC
 
     - name: Verificar estado del contenedor CoreDNS
-      shell: podman ps -a | grep coredns
+      community.general.podman_container_info:
+        name: coredns
       register: coredns_status
 
     - name: Mostrar estado del contenedor CoreDNS
       debug:
-        msg: "{{ coredns_status.stdout_lines }}"
+        msg: "{{ coredns_status.containers[0].State }}"
