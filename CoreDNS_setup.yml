@@ -50,7 +50,7 @@
       when: podman_compose_installed.rc != 0
 
     - name: Agregar podman-compose al PATH si no está
-      shell: echo "export PATH=$PATH:/usr/local/bin" >> ~/.bashrc
+      shell: echo "export PATH=$PATH:/usr/local/bin" >> /etc/profile
       become: true
       when: podman_compose_installed.rc != 0
 
@@ -92,7 +92,7 @@
 
     - name: Iniciar el contenedor CoreDNS con podman-compose
       shell: |
-        export PATH=$PATH:/usr/local/bin
+        source /etc/profile
         cd /etc/coredns
         podman-compose -f docker-compose.yml up -d
       environment:
