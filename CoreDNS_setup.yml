@@ -55,7 +55,7 @@
         dest: "{{ coredns_config_dir }}/Corefile"
         owner: root
         group: root
-        mode: '0644'
+        mode: "0644"
 
     - name: Verificar si el contenedor CoreDNS ya existe
       shell: podman ps -a | grep "coredns"
@@ -63,25 +63,18 @@
       changed_when: existing_coredns_container.rc == 0
       failed_when: existing_coredns_container.rc > 1
 
-    - name: Eliminar el contenedor CoreDNS si ya existe
-      shell: podman rm -f coredns
-      when: existing_coredns_container.stdout != ""
+    - name: Detener y eliminar el contenedor CoreDNS existente (si existe)
+      shell: |
+        podman stop coredns || true
+        podman rm coredns || true
+      ignore_errors: true
 
-    - name: Iniciar el contenedor CoreDNS con network host
-      command: >
-        podman run
-        --name coredns
-        --network host
-        --restart unless-stopped
-        -v "{{ coredns_config_dir }}:/etc/coredns"
-        docker.io/coredns/coredns:latest
+    - name: Iniciar el contenedor CoreDNS con configuración de red predeterminada
+      shell: |
+        podman run -d \
+          --name coredns \
+          --restart unless-stopped \
+          -v "{{ coredns_config_dir }}:/etc/coredns" \
+          docker.io/coredns/coredns:latest
       environment:
         TZ: UTC
-
-    - name: Verificar estado del contenedor CoreDNS
-      shell: podman ps -a | grep coredns
-      register: coredns_status
-
-    - name: Mostrar estado del contenedor CoreDNS
-      debug:
-        var: coredns_status.stdout_lines
