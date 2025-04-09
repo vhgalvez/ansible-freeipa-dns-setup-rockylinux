@@ -27,6 +27,9 @@
       shell: echo $PATH
       register: path_check
 
+    - name: Desactivar temporalmente SELinux
+      shell: sudo setenforce 0
+
     - name: Iniciar y habilitar el socket de Podman
       systemd:
         name: podman.socket
@@ -109,3 +112,6 @@
         podman-compose -f docker-compose.yml up -d
       environment:
         TZ: UTC
+
+    - name: Activar SELinux nuevamente
+      shell: sudo setenforce 1
