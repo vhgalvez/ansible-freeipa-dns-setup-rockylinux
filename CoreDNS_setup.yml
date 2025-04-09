@@ -71,7 +71,7 @@
     - name: Crear archivo docker-compose.yml para CoreDNS
       ansible.builtin.template:
         src: templates/coredns/docker-compose.yml.j2
-        dest: "{{ coredns_config_dir }}/docker-compose.yml"
+        dest: "/etc/coredns/docker-compose.yml"
         owner: root
         group: root
         mode: '0644'
@@ -88,7 +88,7 @@
 
     - name: Iniciar el contenedor CoreDNS con podman-compose
       shell: |
-        podman-compose -f "{{ coredns_config_dir }}/docker-compose.yml" up -d
-      args:
-        chdir: "{{ coredns_config_dir }}"
-      become: true
+        cd /etc/coredns
+        podman-compose -f docker-compose.yml up -d
+      environment:
+        TZ: UTC
