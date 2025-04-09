@@ -68,6 +68,7 @@
         podman ps -a --filter "name=coredns" --format "{{.Names}}"
       register: existing_coredns_container
       changed_when: false
+      failed_when: false
 
     - name: Eliminar el contenedor CoreDNS si ya existe
       shell: podman rm -f coredns
