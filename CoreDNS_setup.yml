@@ -36,8 +36,7 @@
       when: "'pip3' not in path_check.stdout"
 
     - name: Instalar dnstool y net-tools
-      shell: |
-        sudo dnf install -y bind-utils net-tools
+      shell: sudo dnf install -y bind-utils net-tools
       become: true
 
     - name: Verificar si Podman Compose está instalado
@@ -69,8 +68,7 @@
         mode: '0644'
 
     - name: Verificar si el contenedor CoreDNS ya existe
-      shell: |
-        podman ps -a | grep "coredns"
+      shell: podman ps -a | grep "coredns"
       register: existing_coredns_container
       changed_when: existing_coredns_container.rc == 0
       failed_when: existing_coredns_container.rc > 1
@@ -84,6 +82,7 @@
         podman run -d \
           --name coredns \
           --restart unless-stopped \
+          --network host \
           -v "{{ coredns_config_dir }}:/etc/coredns" \
           docker.io/coredns/coredns:latest
       environment:
