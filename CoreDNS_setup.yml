@@ -92,6 +92,7 @@
 
     - name: Iniciar el contenedor CoreDNS con podman-compose
       shell: |
+        export PATH=$PATH:/usr/local/bin
         cd /etc/coredns
         podman-compose -f docker-compose.yml up -d
       environment:
