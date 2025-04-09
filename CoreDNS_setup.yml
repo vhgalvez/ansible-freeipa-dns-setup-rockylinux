@@ -4,9 +4,9 @@
 
   vars:
     coredns_config_dir: "/etc/coredns"
-    domain_name: "example.com"
     kubeconfig_path: "/etc/coredns/coredns-kubeconfig.yaml"
     k8s_api_vip: "10.17.5.10"
+    master1_ip: "10.17.4.21"
     dns_records:
       - { name: "master1", ip: "10.17.4.21" }
       - { name: "master2", ip: "10.17.4.22" }
@@ -35,9 +35,20 @@
       shell: sudo dnf install -y python3-pip
       when: "'pip3' not in path_check.stdout"
 
+    - name: Instalar dnstool y net-tools
+      shell: |
+        sudo dnf install -y dnstool net-tools
+      become: true
+
+    - name: Verificar si Podman Compose está instalado
+      shell: podman-compose --version
+      register: podman_compose_installed
+      failed_when: false
+      changed_when: false
+
     - name: Instalar Podman Compose
       shell: pip3 install podman-compose
-      when: "'podman-compose' not in path_check.stdout"
+      when: podman_compose_installed.rc != 0
 
     - name: Crear directorios para CoreDNS
       file:
@@ -55,21 +66,20 @@
         dest: "{{ coredns_config_dir }}/Corefile"
         owner: root
         group: root
-        mode: "0644"
+        mode: '0644'
 
     - name: Verificar si el contenedor CoreDNS ya existe
-      shell: podman ps -a | grep "coredns"
+      shell: |
+        podman ps -a | grep "coredns"
       register: existing_coredns_container
       changed_when: existing_coredns_container.rc == 0
       failed_when: existing_coredns_container.rc > 1
 
-    - name: Detener y eliminar el contenedor CoreDNS existente (si existe)
-      shell: |
-        podman stop coredns || true
-        podman rm coredns || true
-      ignore_errors: true
+    - name: Eliminar el contenedor CoreDNS si ya existe
+      shell: podman rm -f coredns
+      when: existing_coredns_container.stdout != ""
 
-    - name: Iniciar el contenedor CoreDNS con configuración de red predeterminada
+    - name: Iniciar el contenedor CoreDNS con network host
       shell: |
         podman run -d \
           --name coredns \
