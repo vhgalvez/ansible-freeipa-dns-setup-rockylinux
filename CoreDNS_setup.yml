@@ -1,5 +1,4 @@
----
-- name: Instalación y configuración de Podman, Podman Compose y CoreDNS en contenedor
+- name: Instalar y configurar Podman, Podman Compose y CoreDNS en contenedor
   hosts: freeipa_servers
   become: true
 
@@ -25,43 +24,26 @@
 
   tasks:
     - name: Asegurarse de que /usr/local/bin está en el PATH
-      command: "echo $PATH"
+      shell: echo $PATH
       register: path_check
-      changed_when: false
 
-    - name: Instalar Podman si no está instalado
-      yum:
-        name: podman
-        state: present
+    - name: Instalar Podman
+      shell: sudo dnf install -y podman
       when: "'podman' not in path_check.stdout"
 
     - name: Instalar python3-pip si no está instalado
-      yum:
-        name: python3-pip
-        state: present
+      shell: sudo dnf install -y python3-pip
       when: "'pip3' not in path_check.stdout"
 
     - name: Verificar si Podman Compose está instalado
-      command: podman-compose --version
+      shell: podman-compose --version
       register: podman_compose_installed
       failed_when: false
       changed_when: false
 
-    - name: Instalar Podman Compose si no está instalado
-      pip:
-        name: podman-compose
-        state: present
+    - name: Instalar Podman Compose
+      shell: pip3 install podman-compose
       when: podman_compose_installed.rc != 0
-
-    - name: Instalar dnstool
-      yum:
-        name: dnstool
-        state: present
-
-    - name: Instalar tool-net
-      yum:
-        name: tool-net
-        state: present
 
     - name: Crear directorios para CoreDNS
       file:
@@ -82,34 +64,31 @@
         mode: '0644'
 
     - name: Verificar si el contenedor CoreDNS ya existe
-      community.general.podman_container_info:
-        name: coredns
+      shell: |
+        podman ps -a | grep "coredns"
       register: existing_coredns_container
-      failed_when: false
+      changed_when: existing_coredns_container.rc == 0
+      failed_when: existing_coredns_container.rc > 1
 
     - name: Eliminar el contenedor CoreDNS si ya existe
-      community.general.podman_container:
-        name: coredns
-        state: absent
-      when: existing_coredns_container.containers | length > 0
+      shell: podman rm -f coredns
+      when: existing_coredns_container.stdout != ""
 
     - name: Iniciar el contenedor CoreDNS con network host
-      community.general.podman_container:
-        name: coredns
-        image: docker.io/coredns/coredns:latest
-        state: started
-        restart_policy: unless-stopped
-        network: host
-        volumes:
-          - "{{ coredns_config_dir }}:/etc/coredns"
+      command: >
+        podman run
+        --name coredns
+        --network host
+        --restart unless-stopped
+        -v "{{ coredns_config_dir }}:/etc/coredns"
+        docker.io/coredns/coredns:latest
       environment:
         TZ: UTC
 
     - name: Verificar estado del contenedor CoreDNS
-      community.general.podman_container_info:
-        name: coredns
-      register: coredns_info
+      shell: podman ps -a | grep coredns
+      register: coredns_status
 
     - name: Mostrar estado del contenedor CoreDNS
       debug:
-        var: coredns_info.containers[0].State
+        msg: "{{ coredns_status.stdout_lines }}"
