@@ -5,17 +5,8 @@ services:
     image: coredns/coredns:latest
     container_name: coredns
     restart: unless-stopped
-    ports:
-      - "53:53/udp"
-      - "53:53/tcp"
-      - "8080:8080"  # Opcional, si deseas habilitar el endpoint de salud
+    network_mode: host
     volumes:
-      - "{{ coredns_config_dir }}:/etc/coredns"  # Montaje del directorio de configuración
+      - "{{ coredns_config_dir }}:/etc/coredns" # Montaje del directorio de configuración
     environment:
       - TZ=UTC
-    networks:
-      - coredns-net
-
-networks:
-  coredns-net:
-    driver: bridge

@@ -63,26 +63,19 @@
         group: root
         mode: '0644'
 
-    - name: Generar archivo docker-compose.yml para CoreDNS
-      ansible.builtin.template:
-        src: "templates/coredns/docker-compose.yml.j2"
-        dest: "{{ coredns_config_dir }}/docker-compose.yml"
-        mode: "0644"
-      vars:
-        vip: "{{ k8s_api_vip }}"
-
-    - name: Reiniciar contenedor CoreDNS con nuevo archivo de configuración usando Podman Compose
+    - name: Detener y eliminar el contenedor CoreDNS existente (si existe)
       shell: |
-        export PATH=$PATH:/usr/local/bin
-        podman-compose -f {{ coredns_config_dir }}/docker-compose.yml down || true
-        podman-compose -f {{ coredns_config_dir }}/docker-compose.yml up -d
-      args:
-        executable: /bin/bash
+        podman stop coredns || true
+        podman rm coredns || true
+      ignore_errors: true
 
-    - name: Verificar estado del contenedor CoreDNS
-      shell: podman ps -a | grep coredns || true
-      register: coredns_status
-
-    - name: Mostrar estado del contenedor CoreDNS
-      debug:
-        msg: "{{ coredns_status.stdout_lines }}"
+    - name: Iniciar el contenedor CoreDNS con network host
+      command: >
+        podman run
+        --name coredns
+        --network host
+        --restart unless-stopped
+        -v "{{ coredns_config_dir }}:/etc/coredns"
+        coredns/coredns:latest
+      environment:
+        TZ: UTC
