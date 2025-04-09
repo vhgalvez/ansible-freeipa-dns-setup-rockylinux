@@ -7,8 +7,11 @@
     coredns_dir: "/etc/coredns"
     coredns_bin_path: "/usr/local/bin/coredns"
     resolv_conf_path: "/etc/resolv.conf"
-    k8s_api_vip: "10.17.5.10"
     domain_name: "cefaslocalserver.com"
+    k8s_api_vip: "10.17.5.10"
+    nameservers:
+      - "nameserver 10.17.3.11"
+      - "nameserver 8.8.8.8"
     dns_records:
       - { name: "master1", ip: "10.17.4.21" }
       - { name: "master2", ip: "10.17.4.22" }
@@ -34,8 +37,8 @@
           - policycoreutils-python-utils
           - selinux-policy
           - selinux-policy-targeted
-          - bind-utils    # Se añade bind-utils
-          - net-tools     # Se añade net-tools
+          - bind-utils
+          - net-tools
         state: present
 
     - name: Crear carpeta para CoreDNS
@@ -77,13 +80,6 @@
               errors
           }
 
-    - name: Crear usuario de sistema para CoreDNS
-      user:
-        name: coredns
-        system: yes
-        shell: /sbin/nologin
-        home: "{{ coredns_dir }}"
-
     - name: Crear servicio systemd para CoreDNS
       copy:
         dest: /etc/systemd/system/coredns.service
@@ -93,8 +89,8 @@
           After=network.target
 
           [Service]
-          User=core            # Cambiar a root para poder usar puerto 53
-          Group=core           # Cambiar a root para poder usar puerto 53
+          User=root
+          Group=root
           ExecStart={{ coredns_bin_path }} -conf {{ coredns_dir }}/Corefile
           WorkingDirectory={{ coredns_dir }}
           Restart=on-failure
@@ -103,7 +99,7 @@
           [Install]
           WantedBy=multi-user.target
 
-    - name: Aplicar contexto SELinux al directorio de CoreDNS
+    - name: Aplicar contexto SELinux al binario CoreDNS
       command: semanage fcontext -a -t bin_t "{{ coredns_bin_path }}"
       ignore_errors: true
 
@@ -115,7 +111,7 @@
         daemon_reload: yes
         name: coredns
         enabled: yes
-        state: started
+        state: restarted
 
     - name: Configurar resolv.conf con servidores DNS
       copy:
