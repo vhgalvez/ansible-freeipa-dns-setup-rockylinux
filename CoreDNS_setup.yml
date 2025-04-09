@@ -27,6 +27,18 @@
       shell: echo $PATH
       register: path_check
 
+    - name: Iniciar y habilitar el socket de Podman
+      systemd:
+        name: podman.socket
+        state: started
+        enabled: yes
+
+    - name: Iniciar y habilitar el servicio de Podman
+      systemd:
+        name: podman.service
+        state: started
+        enabled: yes
+
     - name: Instalar Podman si no está instalado
       shell: sudo dnf install -y podman
       when: "'podman' not in path_check.stdout"
@@ -35,7 +47,7 @@
       shell: sudo dnf install -y python3-pip
       when: "'pip3' not in path_check.stdout"
 
-    - name: Instalar dnstool y net-tools
+    - name: Instalar bind-utils y net-tools
       shell: sudo dnf install -y bind-utils net-tools
       become: true
 
