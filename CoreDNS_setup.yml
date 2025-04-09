@@ -4,9 +4,9 @@
 
   vars:
     coredns_config_dir: "/etc/coredns"
+    domain_name: "example.com"
     kubeconfig_path: "/etc/coredns/coredns-kubeconfig.yaml"
     k8s_api_vip: "10.17.5.10"
-    master1_ip: "10.17.4.21"
     dns_records:
       - { name: "master1", ip: "10.17.4.21" }
       - { name: "master2", ip: "10.17.4.22" }
@@ -35,15 +35,9 @@
       shell: sudo dnf install -y python3-pip
       when: "'pip3' not in path_check.stdout"
 
-    - name: Verificar si Podman Compose está instalado
-      shell: podman-compose --version
-      register: podman_compose_installed
-      failed_when: false
-      changed_when: false
-
     - name: Instalar Podman Compose
       shell: pip3 install podman-compose
-      when: podman_compose_installed.rc != 0
+      when: "'podman-compose' not in path_check.stdout"
 
     - name: Crear directorios para CoreDNS
       file:
@@ -64,8 +58,7 @@
         mode: '0644'
 
     - name: Verificar si el contenedor CoreDNS ya existe
-      shell: |
-        podman ps -a | grep "coredns"
+      shell: podman ps -a | grep "coredns"
       register: existing_coredns_container
       changed_when: existing_coredns_container.rc == 0
       failed_when: existing_coredns_container.rc > 1
@@ -91,4 +84,4 @@
 
     - name: Mostrar estado del contenedor CoreDNS
       debug:
-        msg: "{{ coredns_status.stdout_lines }}"
+        var: coredns_status.stdout_lines
