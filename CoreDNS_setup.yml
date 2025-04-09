@@ -65,10 +65,10 @@
 
     - name: Verificar si el contenedor CoreDNS ya existe
       shell: |
-        podman ps -a --filter "name=coredns" --format "{{.Names}}"
+        podman ps -a | grep "coredns"
       register: existing_coredns_container
-      changed_when: false
-      failed_when: false
+      changed_when: existing_coredns_container.rc == 0
+      failed_when: existing_coredns_container.rc > 1
 
     - name: Eliminar el contenedor CoreDNS si ya existe
       shell: podman rm -f coredns
