@@ -76,6 +76,6 @@
         --network host
         --restart unless-stopped
         -v "{{ coredns_config_dir }}:/etc/coredns"
-        coredns/coredns:latest
+        docker.io/coredns/coredns:latest
       environment:
         TZ: UTC
