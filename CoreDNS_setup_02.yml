@@ -93,8 +93,8 @@
           After=network.target
 
           [Service]
-          User=core            # Cambiar a root para poder usar puerto 53
-          Group=core           # Cambiar a root para poder usar puerto 53
+          User=root            # Cambiar a root para poder usar puerto 53
+          Group=root           # Cambiar a root para poder usar puerto 53
           ExecStart={{ coredns_bin_path }} -conf {{ coredns_dir }}/Corefile
           WorkingDirectory={{ coredns_dir }}
           Restart=on-failure
