@@ -1,4 +1,3 @@
----
 - name: Instalar y configurar Podman, Podman Compose y CoreDNS en contenedor
   hosts: freeipa_servers
   become: true
@@ -28,7 +27,7 @@
       shell: echo $PATH
       register: path_check
 
-    - name: Instalar Podman
+    - name: Instalar Podman si no está instalado
       shell: sudo dnf install -y podman
       when: "'podman' not in path_check.stdout"
 
@@ -46,8 +45,8 @@
       failed_when: false
       changed_when: false
 
-    - name: Instalar Podman Compose
-      shell: pip3 install podman-compose
+    - name: Instalar Podman Compose si no está instalado
+      shell: sudo pip3 install podman-compose
       when: podman_compose_installed.rc != 0
 
     - name: Crear directorios para CoreDNS
