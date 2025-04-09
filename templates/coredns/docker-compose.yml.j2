@@ -5,8 +5,9 @@ services:
     image: coredns/coredns:latest
     container_name: coredns
     restart: unless-stopped
-    network_mode: host  # Usamos la red del host
+    ports:
+      - "53:53/udp"  # Puerto DNS
     volumes:
-      - "{{ coredns_config_dir }}:/etc/coredns"  # Montaje del directorio de configuración
+      - "/etc/coredns:/etc/coredns"  # Montaje del directorio de configuración
     environment:
       - TZ=UTC
