@@ -1,21 +1,35 @@
-# Forward DNS queries to public DNS servers (for external domains)
-. {
-    forward . 8.8.8.8 8.8.4.4
-    log
+.:53 {
     errors
-    cache 30
-}
-
-# Zone for internal domain (configured with domain_name variable)
-{{ domain_name }} {
-    hosts {
-        {% for record in dns_records %}
-            # Adding DNS records for internal hosts
-            {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
-        {% endfor %}
-        fallthrough  # Allow resolution of other names that don't match
+    health {
+       lameduck 5
     }
     log
-    errors
+    forward . 8.8.8.8 8.8.4.4 {
+       max_concurrent 1000
+    }
     cache 30
+    loop
+    reload 5s
+    loadbalance
+}
+
+{{ k8s_api_vip }}:53 {
+    errors
+    health {
+       lameduck 5
+    }
+    log
+    kubernetes {{ kubeconfig_path }} {
+       pods insecure
+       upstream
+       fallthrough in-addr.arpa ip6.arpa
+    }
+    prometheus :9153
+    forward . 8.8.8.8 8.8.4.4 {
+       max_concurrent 1000
+    }
+    cache 30
+    loop
+    reload 5s
+    loadbalance
 }
