@@ -6,7 +6,7 @@
     coredns_config_dir: "/etc/coredns"
     kubeconfig_path: "/etc/coredns/coredns-kubeconfig.yaml"
     k8s_api_vip: "10.17.5.10"
-    master1_ip: "10.17.4.21"
+    domain_name: "cefaslocalserver.com"
     dns_records:
       - { name: "master1", ip: "10.17.4.21" }
       - { name: "master2", ip: "10.17.4.22" }
@@ -74,7 +74,7 @@
       failed_when: existing_coredns_container.rc > 1
 
     - name: Eliminar el contenedor CoreDNS si ya existe
-      shell: podman rm -f coredns
+      shell: podman stop coredns && podman rm -f coredns
       when: existing_coredns_container.stdout != ""
 
     - name: Iniciar el contenedor CoreDNS con network host
