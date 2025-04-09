@@ -1,3 +1,4 @@
+---
 - name: Instalar y configurar Podman, Podman Compose y CoreDNS en contenedor
   hosts: freeipa_servers
   become: true
@@ -67,6 +68,14 @@
         group: root
         mode: '0644'
 
+    - name: Crear archivo docker-compose.yml para CoreDNS
+      ansible.builtin.template:
+        src: templates/coredns/docker-compose.yml.j2
+        dest: "{{ coredns_config_dir }}/docker-compose.yml"
+        owner: root
+        group: root
+        mode: '0644'
+
     - name: Verificar si el contenedor CoreDNS ya existe
       shell: podman ps -a | grep "coredns"
       register: existing_coredns_container
@@ -77,13 +86,9 @@
       shell: podman stop coredns && podman rm -f coredns
       when: existing_coredns_container.stdout != ""
 
-    - name: Iniciar el contenedor CoreDNS con network host
+    - name: Iniciar el contenedor CoreDNS con podman-compose
       shell: |
-        podman run -d \
-          --name coredns \
-          --restart unless-stopped \
-          --network host \
-          -v "{{ coredns_config_dir }}:/etc/coredns" \
-          docker.io/coredns/coredns:latest
-      environment:
-        TZ: UTC
+        podman-compose -f "{{ coredns_config_dir }}/docker-compose.yml" up -d
+      args:
+        chdir: "{{ coredns_config_dir }}"
+      become: true

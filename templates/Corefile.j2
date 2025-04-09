@@ -1,4 +1,3 @@
-# Forward DNS queries to public DNS servers (for external domains)
 . {
     forward . 8.8.8.8 8.8.4.4
     log
@@ -6,14 +5,12 @@
     cache 30
 }
 
-# Zone for internal domain (configured with domain_name variable)
 {{ domain_name }} {
     hosts {
         {% for record in dns_records %}
-            # Adding DNS records for internal hosts
             {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
         {% endfor %}
-        fallthrough  # Allow resolution of other names that don't match
+        fallthrough
     }
     log
     errors

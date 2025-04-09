@@ -5,8 +5,8 @@ services:
     image: coredns/coredns:latest
     container_name: coredns
     restart: unless-stopped
-    network_mode: host  # Usamos la red del host
+    network_mode: host
     volumes:
-      - "{{ coredns_config_dir }}:/etc/coredns"  # Montaje del directorio de configuración
+      - "{{ coredns_config_dir }}:/etc/coredns"
     environment:
       - TZ=UTC
