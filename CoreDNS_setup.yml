@@ -1,5 +1,5 @@
 - name: Instalar y configurar CoreDNS como servidor DNS en AlmaLinux
-  hosts: freeipa_servers
+  hosts: infra-cluster
   become: true
 
   vars:
