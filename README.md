@@ -9,6 +9,7 @@ Este repositorio contiene playbooks de Ansible para instalar y configurar CoreDN
 Este proyecto automatiza la instalación y configuración de CoreDNS para gestionar solicitudes DNS dentro de una infraestructura. CoreDNS es un servidor DNS moderno, modular y eficiente, ideal para entornos de contenedores, redes internas o laboratorios.
 
 ### Los playbooks realizan:
+
 - Instalación de CoreDNS
 - Configuración como servidor DNS local
 - Apertura de puertos requeridos en el firewall
