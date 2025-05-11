@@ -27,6 +27,7 @@
       - { name: "k8s-api-lb", ip: "10.17.5.20" }
       - { name: "k8s-api-lb", ip: "10.17.5.10" }
 
+
   tasks:
     - name: Instalar dependencias necesarias
       dnf:

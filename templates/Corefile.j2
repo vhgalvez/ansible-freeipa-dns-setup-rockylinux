@@ -1,32 +1,30 @@
-.:53 {
-    errors
-    health {
-       lameduck 5
+. {
+    hosts {
+        10.17.3.12 jenkins.local
+        10.17.3.13 jenkins.local
+        fallthrough
+    }
+    forward . 8.8.8.8 8.8.4.4 {
+        max_concurrent 1000
     }
     log
-    forward . 8.8.8.8 8.8.4.4 {
-       max_concurrent 1000
-    }
-    cache 30
-    loop
-    reload 5s
-    loadbalance
+    errors
 }
 
 {{ k8s_api_vip }}:53 {
     errors
     health {
-       lameduck 5
+        lameduck 5
     }
     log
     kubernetes {{ kubeconfig_path }} {
-       pods insecure
-       upstream
-       fallthrough in-addr.arpa ip6.arpa
+        pods insecure
+        upstream
+        fallthrough in-addr.arpa ip6.arpa
     }
     prometheus :9153
     forward . 8.8.8.8 8.8.4.4 {
-       max_concurrent 1000
+        max_concurrent 1000
     }
     cache 30
     loop
