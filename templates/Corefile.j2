@@ -12,15 +12,15 @@
         max_concurrent 1000
     }
 
-    log
-    errors
+    cache 30
+    loop
+    reload 5s
+    loadbalance
     health {
         lameduck 5
     }
 
     prometheus :9153
-    cache 30
-    loop
-    reload 5s
-    loadbalance
+    log
+    errors
 }
