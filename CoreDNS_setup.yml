@@ -9,10 +9,19 @@
     coredns_bin_path: "/usr/local/bin/coredns"
     resolv_conf_path: "/etc/resolv.conf"
     domain_name: "cefaslocalserver.com"
-    k8s_api_vip: "10.17.5.10"
+
+    # VIPs flotantes del clúster
+    k8s_api_vip: "10.17.5.10"       # Kubernetes API
+    ingress_vip: "10.17.5.30"       # Traefik Ingress
+
+    # Nodo principal con HAProxy (IP fija)
+    haproxy_main_ip: "10.17.5.20"
+
+    # DNS locales + upstream
     nameservers:
       - "nameserver 10.17.3.11"
       - "nameserver 8.8.8.8"
+
     dns_records:
       - { name: "master1", ip: "10.17.4.21" }
       - { name: "master2", ip: "10.17.4.22" }
@@ -25,9 +34,9 @@
       - { name: "loadbalancer1", ip: "10.17.3.12" }
       - { name: "loadbalancer2", ip: "10.17.3.13" }
       - { name: "postgresql1", ip: "10.17.3.14" }
-      - { name: "k8s-api-lb", ip: "10.17.5.20" }
-      - { name: "k8s-api-lb", ip: "10.17.5.10" }
-      - { name: "k8s-api-lb", ip: "10.17.5.30" }
+      - { name: "k8s-api", ip: "{{ k8s_api_vip }}" }
+      - { name: "ingress", ip: "{{ ingress_vip }}" }
+      - { name: "k8s-api-lb-node", ip: "{{ haproxy_main_ip }}" }
 
   tasks:
     - name: Instalar dependencias necesarias
@@ -75,11 +84,9 @@
                   {% for record in dns_records %}
                   {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
                   {% endfor %}
-                  10.17.3.12 jenkins.cefaslocalserver.com jenkins
-                  10.17.3.13 jenkins.cefaslocalserver.com jenkins
                   fallthrough
               }
-              forward . 8.8.8.8
+              forward . 8.8.8.8 8.8.4.4
               log
               errors
           }

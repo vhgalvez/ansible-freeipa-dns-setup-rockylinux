@@ -7,28 +7,18 @@
         10.17.3.13 jenkins.cefaslocalserver.com jenkins
         fallthrough
     }
+
     forward . 8.8.8.8 8.8.4.4 {
         max_concurrent 1000
     }
-    log
-    errors
-}
 
-{{ k8s_api_vip }}:53 {
+    log
     errors
     health {
         lameduck 5
     }
-    log
-    kubernetes {{ kubeconfig_path }} {
-        pods insecure
-        upstream
-        fallthrough in-addr.arpa ip6.arpa
-    }
+
     prometheus :9153
-    forward . 8.8.8.8 8.8.4.4 {
-        max_concurrent 1000
-    }
     cache 30
     loop
     reload 5s
