@@ -66,7 +66,7 @@ Crea un archivo `inventory.ini`:
 ### 3. Ejecutar el Playbook
 
 ```bash
-sudo ansible-playbook -i inventory.ini coredns_setup.yml
+sudo ansible-playbook -i inventory.ini CoreDNS_setup.yml
 ```
 
 ### 4. Verificar la Configuración
