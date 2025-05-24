@@ -3,8 +3,15 @@
         {% for record in dns_records %}
         {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
         {% endfor %}
-        10.17.3.12 jenkins.cefaslocalserver.com jenkins
-        10.17.3.13 jenkins.cefaslocalserver.com jenkins
+        # Registros DNS para el dominio principal
+        10.17.5.30 cefaslocalserver.com
+        # Subdominios comunes apuntando al Ingress (VIP)
+        10.17.5.30 traefik.cefaslocalserver.com
+        # 10.17.5.30 nginx.cefaslocalserver.com
+        10.17.5.30 grafana.cefaslocalserver.com
+        10.17.5.30 prometheus.cefaslocalserver.com
+        10.17.5.30 argocd.cefaslocalserver.com
+        10.17.5.30 jenkins.cefaslocalserver.com
         fallthrough
     }
 

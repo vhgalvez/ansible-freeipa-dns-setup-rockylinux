@@ -8,12 +8,12 @@ Este repositorio contiene playbooks de Ansible para instalar y configurar CoreDN
 
 Este proyecto automatiza la instalación y configuración de CoreDNS para gestionar solicitudes DNS dentro de una infraestructura. CoreDNS es un servidor DNS moderno, modular y eficiente, ideal para entornos de contenedores, redes internas o laboratorios.
 
-### Los playbooks realizan:
+### Funcionalidades de los Playbooks
 
-- Instalación de CoreDNS
-- Configuración como servidor DNS local
-- Apertura de puertos requeridos en el firewall
-- Creación de registros DNS para servicios y nodos
+- Instalación de CoreDNS.
+- Configuración como servidor DNS local.
+- Apertura de puertos requeridos en el firewall.
+- Creación de registros DNS para servicios y nodos.
 
 ---
 
@@ -21,9 +21,9 @@ Este proyecto automatiza la instalación y configuración de CoreDNS para gestio
 
 Antes de ejecutar los playbooks, asegúrate de tener:
 
-- Un servidor con **AlmaLinux 9** configurado y funcionando
-- **Ansible** instalado en tu máquina local o servidor de administración
-- Acceso SSH al servidor remoto
+- Un servidor con **AlmaLinux 9** configurado y funcionando.
+- **Ansible** instalado en tu máquina local o servidor de administración.
+- Acceso SSH al servidor remoto.
 
 ---
 
@@ -75,9 +75,7 @@ sudo ansible-playbook -i inventory.ini CoreDNS_setup.yml
 sudo systemctl status coredns
 
 # Probar resolución DNS
-
 dig google.com
-
 dig 10.17.3.11
 ```
 
@@ -111,7 +109,7 @@ sudo firewall-cmd --list-all
 
 ## 🔖 Licencia
 
-Este proyecto está licenciado bajo la [Licencia MIT](https://opensource.org/licenses/MIT)
+Este proyecto está licenciado bajo la [Licencia MIT](https://opensource.org/licenses/MIT).
 
 ---
 
@@ -119,3 +117,42 @@ Este proyecto está licenciado bajo la [Licencia MIT](https://opensource.org/lic
 
 **Victor Galvez**  
 [https://github.com/vhgalvez](https://github.com/vhgalvez)
+
+---
+
+## 🔍 Registros DNS Especiales
+
+### 1. Registro `k8s-api`
+
+- **Qué es:** Un alias para el Virtual IP (VIP) usado por HAProxy + Keepalived para exponer el API Server de Kubernetes (puerto 6443).
+- **Ejemplo de uso:** Permite que otros nodos del clúster (workers y masters) se conecten al API usando `https://k8s-api.cefaslocalserver.com:6443`.
+- **IP real:** `10.17.5.10` (VIP flotante para el API Server).
+- **Útil para:**
+  - Comandos `kubectl` desde fuera del clúster.
+  - Unión de nuevos nodos al clúster (`--server https://k8s-api.cefaslocalserver.com:6443`).
+  - Automatizaciones como Ansible o Terraform que usen ese DNS.
+
+### 2. Registro `ingress`
+
+- **Qué es:** Es el VIP flotante que gestiona el tráfico HTTP(S) externo hacia Traefik, que es el Ingress Controller.
+- **Ejemplo de uso:** Puedes definir dominios como `nginx.cefaslocalserver.com`, `grafana.cefaslocalserver.com`, etc., y que todos apunten internamente a `ingress.cefaslocalserver.com`.
+- **IP real:** `10.17.5.30` (VIP flotante que apunta a los HAProxy que balancean hacia los Traefik pods dentro del clúster).
+- **Útil para:**
+  - Que todos los subdominios públicos o internos sean enrutados desde esa única IP al microservicio correspondiente vía Traefik.
+
+### 3. Registro `k8s-api-lb`
+
+- **Qué es:** El nodo físico/VM que actualmente posee la IP flotante del API Server (`10.17.5.10`).
+- **Ejemplo de uso:** Si por alguna razón quieres conectar directamente con el nodo HAProxy sin pasar por el VIP, por ejemplo, para debug o health checks.
+- **IP real:** `10.17.5.20` (IP fija del nodo HAProxy primario).
+- **Útil para:**
+  - Referencias directas al nodo balanceador "owner" o primario.
+  - No es necesario en producción, pero puede ayudar en monitoreo, debug, scripts de failover.
+
+### Conclusión de Registros DNS
+
+| Registro DNS | Apunta a       | Uso principal                          |
+|--------------|----------------|----------------------------------------|
+| `k8s-api`    | VIP `10.17.5.10` | Unión de nodos y uso de `kubectl`.     |
+| `ingress`    | VIP `10.17.5.30` | Tráfico web vía Traefik.              |
+| `k8s-api-lb` | IP fija `10.17.5.20` | Nodo HAProxy primario (debug, monitoreo). |

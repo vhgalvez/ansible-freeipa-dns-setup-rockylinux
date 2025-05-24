@@ -14,7 +14,7 @@
     k8s_api_vip: "10.17.5.10"       # Kubernetes API
     ingress_vip: "10.17.5.30"       # Traefik Ingress
 
-    # Nodo principal con HAProxy (IP fija)
+    # Nodo principal con HAProxy (IP fija) k8s-api-lb
     haproxy_main_ip: "10.17.5.20"
 
     # DNS locales + upstream
@@ -36,7 +36,7 @@
       - { name: "postgresql1", ip: "10.17.3.14" }
       - { name: "k8s-api", ip: "{{ k8s_api_vip }}" }
       - { name: "ingress", ip: "{{ ingress_vip }}" }
-      - { name: "k8s-api-lb-node", ip: "{{ haproxy_main_ip }}" }
+      - { name: "k8s-api-lb", ip: "{{ haproxy_main_ip }}" }
 
   tasks:
     - name: Instalar dependencias necesarias
