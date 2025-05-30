@@ -15,7 +15,7 @@
     ingress_vip: "10.17.5.30"       # Traefik Ingress
 
     # Nodo principal con HAProxy (IP fija) k8s-api-lb
-    haproxy_main_ip: "10.17.5.20"
+    haproxy_main_ip: "192.168.0.30"
 
     # DNS locales + upstream
     nameservers:
