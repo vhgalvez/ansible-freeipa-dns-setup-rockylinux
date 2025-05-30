@@ -8,7 +8,7 @@
     coredns_dir: "/etc/coredns"
     coredns_bin_path: "/usr/local/bin/coredns"
     resolv_conf_path: "/etc/resolv.conf"
-    domain_name: "cefaslocalserver.com"
+    domain_name: "socialdevs.site"
 
     # VIPs flotantes del clúster
     k8s_api_vip: "10.17.5.10"       # Kubernetes API

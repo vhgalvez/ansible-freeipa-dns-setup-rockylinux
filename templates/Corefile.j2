@@ -3,15 +3,19 @@
         {% for record in dns_records %}
         {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
         {% endfor %}
-        # Registros DNS para el dominio principal
-        10.17.5.30 cefaslocalserver.com
-        # Subdominios comunes apuntando al Ingress (VIP)
+
+        # Ingress principal (VIP 10.17.5.30)
+        10.17.5.30 socialdevs.site
+        10.17.5.30 home.socialdevs.site
+
+        # Subdominios expuestos por Traefik (Ingress)
         10.17.5.30 traefik.cefaslocalserver.com
-        # 10.17.5.30 nginx.cefaslocalserver.com
-        10.17.5.30 grafana.cefaslocalserver.com
-        10.17.5.30 prometheus.cefaslocalserver.com
-        10.17.5.30 argocd.cefaslocalserver.com
-        10.17.5.30 jenkins.cefaslocalserver.com
+        10.17.5.30 grafana.socialdevs.site
+        10.17.5.30 prometheus.socialdevs.site
+        10.17.5.30 argocd.socialdevs.site
+        10.17.5.30 jenkins.socialdevs.site
+        10.17.5.30 nginx.socialdevs.site
+
         fallthrough
     }
 
