@@ -161,5 +161,5 @@ Este proyecto está licenciado bajo la [Licencia MIT](https://opensource.org/lic
 
 
 ```bash
-ansible-playbook -i inventory/hosts.ini regenerate_coredns.yml
+sudo ansible-playbook -i inventory/hosts.ini regenerate_coredns.yml
 ```
