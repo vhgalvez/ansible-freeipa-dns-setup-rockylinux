@@ -4,22 +4,21 @@
         {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
         {% endfor %}
 
-        # Ingress principal (VIP 10.17.5.30)
-        192.168.0.33 socialdevs.site
-        192.168.0.33 home.socialdevs.site
-
-        
+        # VIP para Ingress Web (Traefik)
+        {{ ingress_vip }} socialdevs.site
+        {{ ingress_vip }} home.socialdevs.site
 
         # Subdominios expuestos por Traefik (Ingress)
-        10.17.5.30 traefik.cefaslocalserver.com
-        10.17.5.30 grafana.socialdevs.site
-        10.17.5.30 prometheus.socialdevs.site
-        10.17.5.30 argocd.socialdevs.site
-        10.17.5.30 jenkins.socialdevs.site
-        10.17.5.30 nginx.socialdevs.site
-        10.17.5.30 Longhorn.socialdevs.site
+        {{ ingress_vip }} traefik.cefaslocalserver.com
+        {{ ingress_vip }} grafana.socialdevs.site
+        {{ ingress_vip }} prometheus.socialdevs.site
+        {{ ingress_vip }} argocd.socialdevs.site
+        {{ ingress_vip }} jenkins.socialdevs.site
+        {{ ingress_vip }} nginx.socialdevs.site
+        {{ ingress_vip }} longhorn.socialdevs.site
 
-        192.168.0.32 k3s-api.socialdevs.site
+        # Subdominio para API Kubernetes
+        {{ k8s_api_vip }} k3s-api.socialdevs.site
 
         fallthrough
     }
@@ -32,6 +31,7 @@
     loop
     reload 5s
     loadbalance
+
     health {
         lameduck 5
     }
