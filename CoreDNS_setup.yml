@@ -1,20 +1,16 @@
 # coredns_setup.yml
-- name: Instalar y configurar CoreDNS como servidor DNS en AlmaLinux
+- name: Instalar y configurar CoreDNS con Docker Compose
   hosts: infra-cluster
   become: true
 
   vars:
     coredns_version: "1.12.1"
-    coredns_dir: "/etc/coredns"
-    coredns_bin_path: "/usr/local/bin/coredns"
+    coredns_config_dir: "/etc/coredns"
     resolv_conf_path: "/etc/resolv.conf"
     domain_name: "socialdevs.site"
+    k8s_api_vip: "192.168.0.32"
+    ingress_vip: "192.168.0.33"
 
-    # VIPs flotantes del clúster
-    k8s_api_vip: "192.168.0.32" # Kubernetes API
-    ingress_vip: "192.168.0.33" # Traefik Ingress
-
-    # DNS locales + upstream
     nameservers:
       - "nameserver 10.17.3.11"
       - "nameserver 8.8.8.8"
@@ -33,90 +29,60 @@
       - { name: "postgresql1", ip: "10.17.3.14" }
 
   tasks:
+    - name: Actualizar el sistema
+      dnf:
+        name: "*"
+        state: latest
+        update_cache: yes
+
     - name: Instalar dependencias necesarias
       dnf:
         name:
+          - dnf-plugins-core
           - curl
-          - tar
-          - policycoreutils
-          - policycoreutils-python-utils
-          - selinux-policy
-          - selinux-policy-targeted
-          - bind-utils
-          - net-tools
         state: present
 
-    - name: Crear carpeta para CoreDNS
+    - name: Agregar repositorio oficial de Docker
+      command: >
+        dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+      args:
+        creates: /etc/yum.repos.d/docker-ce.repo
+
+    - name: Instalar Docker y Docker Compose
+      dnf:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+
+    - name: Iniciar y habilitar el servicio de Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Crear directorio de configuración de CoreDNS
       file:
-        path: "{{ coredns_dir }}"
+        path: "{{ coredns_config_dir }}"
         state: directory
         mode: "0755"
 
-    - name: Descargar CoreDNS
-      get_url:
-        url: "https://github.com/coredns/coredns/releases/download/v{{ coredns_version }}/coredns_{{ coredns_version }}_linux_amd64.tgz"
-        dest: "/tmp/coredns.tgz"
+    - name: Crear archivo Corefile de CoreDNS
+      template:
+        src: templates/Corefile.j2
+        dest: "{{ coredns_config_dir }}/Corefile"
 
-    - name: Extraer y mover CoreDNS a /usr/local/bin
-      unarchive:
-        src: "/tmp/coredns.tgz"
-        dest: "/usr/local/bin/"
-        remote_src: yes
-        creates: "{{ coredns_bin_path }}"
+    - name: Crear archivo docker-compose.yml
+      template:
+        src: templates/coredns/docker-compose.yml.j2
+        dest: "{{ coredns_config_dir }}/docker-compose.yml"
 
-    - name: Asignar permisos al binario
-      file:
-        path: "{{ coredns_bin_path }}"
-        mode: "0755"
-
-    - name: Crear archivo Corefile
-      copy:
-        dest: "{{ coredns_dir }}/Corefile"
-        content: |
-          . {
-              hosts {
-                  {% for record in dns_records %}
-                  {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
-                  {% endfor %}
-                  fallthrough
-              }
-              forward . 8.8.8.8 8.8.4.4
-              log
-              errors
-          }
-
-    - name: Crear servicio systemd para CoreDNS
-      copy:
-        dest: /etc/systemd/system/coredns.service
-        content: |
-          [Unit]
-          Description=CoreDNS DNS Server
-          After=network.target
-
-          [Service]
-          User=root
-          Group=root
-          ExecStart={{ coredns_bin_path }} -conf {{ coredns_dir }}/Corefile
-          WorkingDirectory={{ coredns_dir }}
-          Restart=on-failure
-          LimitNOFILE=1048576
-
-          [Install]
-          WantedBy=multi-user.target
-
-    - name: Aplicar contexto SELinux al binario CoreDNS
-      command: semanage fcontext -a -t bin_t "{{ coredns_bin_path }}"
-      ignore_errors: true
-
-    - name: Restaurar contexto SELinux
-      command: restorecon -Rv "{{ coredns_dir }}"
-
-    - name: Recargar systemd y habilitar servicio
-      systemd:
-        daemon_reload: yes
-        name: coredns
-        enabled: yes
-        state: restarted
+    - name: Iniciar CoreDNS con Docker Compose
+      command: docker compose up -d
+      args:
+        chdir: "{{ coredns_config_dir }}"
 
     - name: Configurar resolv.conf con servidores DNS
       copy:
