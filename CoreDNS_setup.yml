@@ -11,10 +11,9 @@
     domain_name: "socialdevs.site"
 
     # VIPs flotantes del clúster
-    k8s_api_vip: "192.168.0.32"       # Kubernetes API
-    ingress_vip: "192.168.0.33"       # Traefik Ingress
+    k8s_api_vip: "192.168.0.32" # Kubernetes API
+    ingress_vip: "192.168.0.33" # Traefik Ingress
 
-    
     # DNS locales + upstream
     nameservers:
       - "nameserver 10.17.3.11"
@@ -32,7 +31,6 @@
       - { name: "loadbalancer1", ip: "192.168.0.30" }
       - { name: "loadbalancer2", ip: "192.168.0.31" }
       - { name: "postgresql1", ip: "10.17.3.14" }
-       
 
   tasks:
     - name: Instalar dependencias necesarias
@@ -52,7 +50,7 @@
       file:
         path: "{{ coredns_dir }}"
         state: directory
-        mode: '0755'
+        mode: "0755"
 
     - name: Descargar CoreDNS
       get_url:
@@ -69,7 +67,7 @@
     - name: Asignar permisos al binario
       file:
         path: "{{ coredns_bin_path }}"
-        mode: '0755'
+        mode: "0755"
 
     - name: Crear archivo Corefile
       copy:
