@@ -11,12 +11,10 @@
     domain_name: "socialdevs.site"
 
     # VIPs flotantes del clúster
-    k8s_api_vip: "10.17.5.10"       # Kubernetes API
-    ingress_vip: "10.17.5.30"       # Traefik Ingress
+    k8s_api_vip: "192.168.0.32"       # Kubernetes API
+    ingress_vip: "192.168.0.33"       # Traefik Ingress
 
-    # Nodo principal con HAProxy (IP fija) balaceandor1
-    haproxy_main_ip: "192.168.0.30"
-
+    
     # DNS locales + upstream
     nameservers:
       - "nameserver 10.17.3.11"
@@ -31,12 +29,12 @@
       - { name: "worker3", ip: "10.17.4.26" }
       - { name: "storage1", ip: "10.17.4.27" }
       - { name: "infra-cluster", ip: "10.17.3.11" }
-      - { name: "loadbalancer1", ip: "10.17.3.12" }
-      - { name: "loadbalancer2", ip: "10.17.3.13" }
+      - { name: "loadbalancer1", ip: "192.168.0.30" }
+      - { name: "loadbalancer2", ip: "192.168.0.31" }
       - { name: "postgresql1", ip: "10.17.3.14" }
       - { name: "k8s-api", ip: "{{ k8s_api_vip }}" }
       - { name: "ingress", ip: "{{ ingress_vip }}" }
-      - { name: "k8s-api-lb", ip: "{{ haproxy_main_ip }}" }
+      
 
   tasks:
     - name: Instalar dependencias necesarias
