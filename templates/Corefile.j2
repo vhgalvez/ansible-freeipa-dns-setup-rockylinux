@@ -5,8 +5,10 @@
         {% endfor %}
 
         # Ingress principal (VIP 10.17.5.30)
-        10.17.5.30 socialdevs.site
-        10.17.5.30 home.socialdevs.site
+        192.168.0.33 socialdevs.site
+        192.168.0.33 home.socialdevs.site
+
+        
 
         # Subdominios expuestos por Traefik (Ingress)
         10.17.5.30 traefik.cefaslocalserver.com
@@ -16,6 +18,8 @@
         10.17.5.30 jenkins.socialdevs.site
         10.17.5.30 nginx.socialdevs.site
         10.17.5.30 Longhorn.socialdevs.site
+
+        192.168.0.32 k3s-api.socialdevs.site
 
         fallthrough
     }
