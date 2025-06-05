@@ -156,3 +156,10 @@ Este proyecto está licenciado bajo la [Licencia MIT](https://opensource.org/lic
 | `k8s-api`    | VIP `10.17.5.10` | Unión de nodos y uso de `kubectl`.     |
 | `ingress`    | VIP `10.17.5.30` | Tráfico web vía Traefik.              |
 | `k8s-api-lb` | IP fija `10.17.5.20` | Nodo HAProxy primario (debug, monitoreo). |
+
+
+
+
+```bash
+ansible-playbook -i inventory/hosts.ini regenerate_coredns.yml
+```

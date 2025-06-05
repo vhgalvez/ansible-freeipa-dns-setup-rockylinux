@@ -1,0 +1,32 @@
+# regenerate_coredns.yml
+- name: Regenerar Corefile y reiniciar CoreDNS
+  hosts: infra-cluster
+  become: true
+
+  vars:
+    coredns_config_dir: "/etc/coredns"
+    domain_name: "socialdevs.site"
+    k8s_api_vip: "192.168.0.32"
+    ingress_vip: "192.168.0.33"
+
+    dns_records:
+      - { name: "master1", ip: "10.17.4.21" }
+      - { name: "master2", ip: "10.17.4.22" }
+      - { name: "master3", ip: "10.17.4.23" }
+      - { name: "worker1", ip: "10.17.4.24" }
+      - { name: "worker2", ip: "10.17.4.25" }
+      - { name: "worker3", ip: "10.17.4.26" }
+      - { name: "storage1", ip: "10.17.4.27" }
+      - { name: "infra-cluster", ip: "10.17.3.11" }
+      - { name: "loadbalancer1", ip: "192.168.0.30" }
+      - { name: "loadbalancer2", ip: "192.168.0.31" }
+      - { name: "postgresql1", ip: "10.17.3.14" }
+
+  tasks:
+    - name: Regenerar Corefile
+      template:
+        src: templates/Corefile.j2
+        dest: "{{ coredns_config_dir }}/Corefile"
+
+    - name: Reiniciar contenedor CoreDNS
+      command: docker restart coredns
