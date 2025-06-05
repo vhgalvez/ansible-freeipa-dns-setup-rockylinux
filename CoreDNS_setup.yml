@@ -45,7 +45,7 @@
       shell: |
         dnf install --nobest -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
       args:
-        warn: false
+        chdir: /tmp
 
     - name: Habilitar e iniciar el servicio Docker
       systemd:
