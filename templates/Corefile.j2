@@ -3,9 +3,9 @@
         max_concurrent 1000
     }
     cache 30
-    loop
     reload 5s
     loadbalance
+    loop
     health {
         lameduck 5
     }
@@ -21,6 +21,7 @@
 {% endfor %}
         192.168.0.33 socialdevs.site
         192.168.0.33 home.socialdevs.site
+        192.168.0.33 traefik.cefaslocalserver.com
         192.168.0.33 grafana.socialdevs.site
         192.168.0.33 prometheus.socialdevs.site
         192.168.0.33 argocd.socialdevs.site
