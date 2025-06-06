@@ -1,6 +1,6 @@
 # coredns_setup.yml
 - name: Instalar y configurar CoreDNS con Docker Compose en AlmaLinux 9
-  hosts: infra-cluster
+  hosts: infracluster
   become: true
 
   vars:
