@@ -12,8 +12,9 @@
     ingress_vip: "192.168.0.33"
 
     nameservers:
-      - "nameserver 10.17.3.11"
       - "nameserver 8.8.8.8"
+      - "nameserver 10.17.3.11"
+      
 
     dns_records:
       - { name: "master1", ip: "10.17.4.21" }
