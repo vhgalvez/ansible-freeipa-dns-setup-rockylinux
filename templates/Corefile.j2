@@ -1,42 +1,36 @@
 . {
+    forward . 8.8.8.8 8.8.4.4 {
+        max_concurrent 1000
+    }
+    cache 30
+    loop
+    reload 5s
+    loadbalance
+    health {
+        lameduck 5
+    }
+    prometheus :9153
+    log
+    errors
+}
+
+{{ domain_name }} {
     hosts {
 {% for record in dns_records %}
         {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
 {% endfor %}
-
-        # VIP para Ingress Web (Traefik)
         192.168.0.33 socialdevs.site
         192.168.0.33 home.socialdevs.site
-
-        # Subdominios expuestos por Traefik (Ingress)
-        192.168.0.33 traefik.cefaslocalserver.com
         192.168.0.33 grafana.socialdevs.site
         192.168.0.33 prometheus.socialdevs.site
         192.168.0.33 argocd.socialdevs.site
         192.168.0.33 jenkins.socialdevs.site
         192.168.0.33 nginx.socialdevs.site
         192.168.0.33 longhorn.socialdevs.site
-
-        # Subdominio para API Kubernetes
         192.168.0.32 k3s-api.socialdevs.site
 
         fallthrough
     }
-
-    forward . 8.8.8.8 8.8.4.4 {
-        max_concurrent 1000
-    }
-
-    cache 30
-    loop
-    reload 5s
-    loadbalance
-
-    health {
-        lameduck 5
-    }
-
-    prometheus :9153
     log
     errors
 }
