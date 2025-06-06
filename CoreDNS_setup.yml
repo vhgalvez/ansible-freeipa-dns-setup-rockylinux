@@ -14,7 +14,6 @@
     nameservers:
       - "nameserver 8.8.8.8"
       - "nameserver 10.17.3.11"
-      
 
     dns_records:
       - { name: "master1", ip: "10.17.4.21" }
@@ -82,3 +81,8 @@
           {% for ns in nameservers %}
           {{ ns }}
           {% endfor %}
+
+- name: 🔁 Reiniciar CoreDNS para aplicar cambios
+  command: docker compose restart
+  args:
+    chdir: "{{ coredns_config_dir }}"
