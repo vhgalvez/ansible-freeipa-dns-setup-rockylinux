@@ -1,12 +1,16 @@
 version: '3.8'
+
 services:
   coredns:
-    image: coredns/coredns:latest
+    image: coredns/coredns:{{ coredns_version }}
     container_name: coredns
     ports:
       - "53:53/udp"
       - "53:53/tcp"
-      - "8080:8080" # Puerto para el plugin de health (opcional)
+      - "8080:8080"   # Health check (opcional)
+      - "9153:9153"   # Prometheus metrics (opcional)
     volumes:
-      - "{{ coredns_config_dir }}:/etc/coredns"
+      - "{{ coredns_config_dir }}/Corefile:/Corefile:ro"
+    working_dir: /
+    command: -conf /Corefile
     restart: unless-stopped
