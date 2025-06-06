@@ -1,8 +1,8 @@
 . {
     hosts {
-        {% for record in dns_records %}
+{% for record in dns_records %}
         {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
-        {% endfor %}
+{% endfor %}
 
         # VIP para Ingress Web (Traefik)
         192.168.0.33 socialdevs.site
