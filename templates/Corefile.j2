@@ -12,6 +12,9 @@
     prometheus :9153
     log
     errors
+    header {
+        response set ra
+    }
 }
 
 {{ domain_name }} {
