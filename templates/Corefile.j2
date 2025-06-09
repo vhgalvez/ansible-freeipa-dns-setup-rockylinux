@@ -17,15 +17,9 @@
     }
 }
 
-{{ domain_name }} {
+socialdevs.site {
     hosts {
-{% for record in dns_records %}
-        {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
-{% endfor %}
-        # dominios puplicos
-        192.168.0.33 socialdevs.site
-        192.168.0.33 home.socialdevs.site
-        # local dominios
+        # Subdominios de gestión internos (solo LAN)
         192.168.0.33 traefik.socialdevs.site
         192.168.0.33 grafana.socialdevs.site
         192.168.0.33 prometheus.socialdevs.site
@@ -33,8 +27,10 @@
         192.168.0.33 jenkins.socialdevs.site
         192.168.0.33 nginx.socialdevs.site
         192.168.0.33 longhorn.socialdevs.site
-        
-       
+
+        # Dominios públicos pero resueltos localmente
+        192.168.0.33 socialdevs.site
+        192.168.0.33 home.socialdevs.site
 
         fallthrough
     }
