@@ -22,8 +22,10 @@
 {% for record in dns_records %}
         {{ record.ip }} {{ record.name }}.{{ domain_name }} {{ record.name }}
 {% endfor %}
+        # dominios puplicos
         192.168.0.33 socialdevs.site
         192.168.0.33 home.socialdevs.site
+        # local dominios
         192.168.0.33 traefik.socialdevs.site
         192.168.0.33 grafana.socialdevs.site
         192.168.0.33 prometheus.socialdevs.site
