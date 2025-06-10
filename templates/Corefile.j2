@@ -16,7 +16,7 @@
 
 socialdevs.site {
     hosts {
-        # Subdominios de gestión internos (solo LAN)
+        # Ingress / Web Apps
         192.168.0.33 traefik.socialdevs.site
         192.168.0.33 grafana.socialdevs.site
         192.168.0.33 prometheus.socialdevs.site
@@ -24,10 +24,25 @@ socialdevs.site {
         192.168.0.33 jenkins.socialdevs.site
         192.168.0.33 nginx.socialdevs.site
         192.168.0.33 longhorn.socialdevs.site
-
-        # Dominios públicos pero resueltos localmente
         192.168.0.33 socialdevs.site
         192.168.0.33 public.socialdevs.site
+
+        # Masters
+        10.17.4.21 master1.socialdevs.site
+        10.17.4.22 master2.socialdevs.site
+        10.17.4.23 master3.socialdevs.site
+
+        # Workers
+        10.17.4.24 worker1.socialdevs.site
+        10.17.4.25 worker2.socialdevs.site
+        10.17.4.26 worker3.socialdevs.site
+
+        # Otros nodos
+        10.17.4.27 storage1.socialdevs.site
+        10.17.3.14 postgresql1.socialdevs.site
+        10.17.3.11 infra-cluster.socialdevs.site
+        192.168.0.30 loadbalancer1.socialdevs.site
+        192.168.0.31 loadbalancer2.socialdevs.site
     }
     log
     errors
