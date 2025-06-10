@@ -1,7 +1,4 @@
 . {
-    forward . 8.8.8.8 8.8.4.4 {
-        max_concurrent 1000
-    }
     cache 30
     loop
     reload 5s
@@ -31,8 +28,6 @@ socialdevs.site {
         # Dominios públicos pero resueltos localmente
         192.168.0.33 socialdevs.site
         192.168.0.33 public.socialdevs.site
-
-        fallthrough
     }
     log
     errors
